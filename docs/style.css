@@ -125,6 +125,18 @@ body {
   overflow-x: hidden;
 }
 
+/* Phones could still scroll sideways into empty space: decorative glows
+   reach past the content, and overflow-x: hidden on body alone doesn't
+   stop that on every mobile browser. clip on both html and body does, and
+   (unlike hidden) creates no scroll container, so the sticky nav and
+   in-page links keep working. */
+@supports (overflow: clip) {
+  html,
+  body {
+    overflow-x: clip;
+  }
+}
+
 h1,
 h2,
 h3 {
@@ -224,7 +236,9 @@ img {
   z-index: -1;
   top: -64px;
   left: 50%;
-  width: 1400px;
+  /* Never wider than the window: on phones 1400px reached far past the
+     right edge and the page could be scrolled sideways into it. */
+  width: min(1400px, 100vw);
   height: 1100px;
   transform: translateX(-50%);
   pointer-events: none;
@@ -1356,27 +1370,131 @@ img {
   aspect-ratio: 16 / 10;
 }
 
-.glow-stage::before {
-  content: "";
+/* The mock "video" changes scene every few seconds (three scenes: warm
+   amber, violet, pink), and the glow changes with it: inside the window
+   (.tw-ambient), in the video itself (.tw-scene) and spilling onto the page
+   (.glow-spill) all cross-fade on the same 9s clock, each scene's layers
+   sharing a class (.glow-a / -b / -c) and a start offset. The colors
+   also drift faster here than in the other demos, and a soft highlight
+   sweeps across the video, so it reads as something playing. */
+.glow-spill {
+  --glow-on: var(--spill);
   position: absolute;
   z-index: -1;
   inset: 4% -4% -6%;
   pointer-events: none;
   border-radius: 40px;
-  background: radial-gradient(50% 60% at 28% 45%, rgba(255, 184, 104, 0.9), transparent 70%),
-    radial-gradient(45% 55% at 55% 75%, rgba(255, 96, 150, 0.8), transparent 70%),
-    radial-gradient(50% 60% at 82% 40%, rgba(124, 104, 255, 0.6), transparent 70%);
   filter: blur(72px);
-  opacity: var(--spill);
+  opacity: 0;
+  animation: glowFade 9s linear infinite;
+}
+
+.glow-stage .tw-ambient {
+  --glow-on: min(1, calc(var(--mock-glow) * 1.2));
+  opacity: 0;
+  background-size: 140% 140%;
+  animation: sceneDrift 5s ease-in-out infinite alternate, glowFade 9s linear infinite;
+}
+
+.glow-stage .tw-scene {
+  --glow-on: 1;
+  opacity: 0;
+  background-size: 140% 140%;
+  transition: none;
+  animation: sceneDrift 5s ease-in-out infinite alternate, glowFade 9s linear infinite;
+}
+
+/* Scene A leads the clock; B and C start a third and two thirds in. */
+.glow-stage .glow-b {
+  animation-delay: 0s, -6s;
+}
+
+.glow-stage .glow-c {
+  animation-delay: 0s, -3s;
+}
+
+.glow-spill.glow-b {
+  animation-delay: -6s;
+}
+
+.glow-spill.glow-c {
+  animation-delay: -3s;
+}
+
+@keyframes glowFade {
+  0%,
+  27% {
+    opacity: var(--glow-on);
+  }
+  35%,
+  92% {
+    opacity: 0;
+  }
+  100% {
+    opacity: var(--glow-on);
+  }
+}
+
+.glow-spill.glow-a,
+.glow-stage .tw-ambient.glow-a {
+  background-image: radial-gradient(ellipse 46% 56% at 28% 45%, rgba(255, 184, 104, 0.95), transparent 70%),
+    radial-gradient(ellipse 40% 50% at 58% 72%, rgba(255, 96, 150, 0.8), transparent 70%),
+    radial-gradient(ellipse 50% 58% at 82% 38%, rgba(124, 104, 255, 0.55), transparent 70%);
+}
+
+.glow-spill.glow-b,
+.glow-stage .tw-ambient.glow-b {
+  background-image: radial-gradient(ellipse 50% 60% at 60% 42%, rgba(124, 104, 255, 0.95), transparent 70%),
+    radial-gradient(ellipse 40% 50% at 24% 68%, rgba(80, 170, 255, 0.7), transparent 70%),
+    radial-gradient(ellipse 46% 56% at 84% 70%, rgba(255, 96, 150, 0.5), transparent 70%);
+}
+
+.glow-spill.glow-c,
+.glow-stage .tw-ambient.glow-c {
+  background-image: radial-gradient(ellipse 50% 60% at 40% 55%, rgba(255, 96, 150, 0.95), transparent 70%),
+    radial-gradient(ellipse 42% 52% at 78% 34%, rgba(255, 184, 104, 0.8), transparent 70%),
+    radial-gradient(ellipse 44% 54% at 16% 30%, rgba(124, 104, 255, 0.5), transparent 70%);
+}
+
+.glow-stage .tw-scene.glow-a {
+  background-image: radial-gradient(ellipse 60% 70% at 30% 35%, rgba(255, 184, 104, 0.75), transparent 70%),
+    radial-gradient(ellipse 50% 60% at 78% 70%, rgba(255, 96, 150, 0.6), transparent 70%),
+    linear-gradient(160deg, #1d1430, #0b0a12 70%);
+}
+
+.glow-stage .tw-scene.glow-b {
+  background-image: radial-gradient(ellipse 58% 68% at 64% 40%, rgba(124, 104, 255, 0.8), transparent 70%),
+    radial-gradient(ellipse 46% 56% at 22% 70%, rgba(80, 170, 255, 0.55), transparent 70%),
+    linear-gradient(200deg, #141a38, #0b0a12 70%);
+}
+
+.glow-stage .tw-scene.glow-c {
+  background-image: radial-gradient(ellipse 60% 70% at 42% 58%, rgba(255, 96, 150, 0.8), transparent 70%),
+    radial-gradient(ellipse 48% 58% at 80% 30%, rgba(255, 184, 104, 0.65), transparent 70%),
+    linear-gradient(140deg, #2a1030, #0b0a12 70%);
+}
+
+/* A soft band of light crossing the video now and then. */
+.glow-sweep {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.14) 50%, transparent 65%);
+  background-size: 300% 100%;
+  animation: glowSweep 4.5s ease-in-out infinite;
+}
+
+@keyframes glowSweep {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0% 0;
+  }
 }
 
 .glow-window {
   left: 0;
   width: 100%;
-}
-
-.glow-stage .tw-ambient-a {
-  opacity: min(1, calc(var(--mock-glow) * 1.15));
 }
 
 .glow-stage .caret {
@@ -1390,8 +1508,13 @@ img {
 
 @media (max-width: 860px) {
   .glow-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 48px;
+  }
+
+  /* Stacked, the mock is as wide as the content: keep the spill inside it. */
+  .glow-spill {
+    inset: 4% 0 -6%;
   }
 }
 
@@ -1606,9 +1729,16 @@ img {
 @media (prefers-reduced-motion: reduce) {
   .glow-stage .tw-scene,
   .glow-stage .tw-ambient,
+  .glow-spill,
+  .glow-sweep,
   .glow-stage .tw-video,
   .glow-stage .tw-side {
     animation: none;
+  }
+
+  /* A still of the first scene. */
+  .glow-stage .glow-a {
+    opacity: var(--glow-on);
   }
 
   .glow-divider,
