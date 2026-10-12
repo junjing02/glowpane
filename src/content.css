@@ -844,8 +844,10 @@ html.yt-split-active #below #actions #flexible-item-buttons > :not(:has(*)) {
    deliberate display change on plain layout wrappers only; the
    Subscribe button itself is still left alone (see its note below).
    YouTube may move buttons that "don't fit" into the "..." menu, since
-   its menu can no longer measure its own width. */
-html.yt-split-active #below #top-row #owner,
+   its menu can no longer measure its own width.
+   #owner (channel + Subscribe) was flattened too at first; the Subscribe
+   button was then reported missing, so #owner keeps its own box and
+   spaces its children itself (gap rule above). */
 html.yt-split-active #below #top-row #actions,
 html.yt-split-active #below #actions #actions-inner,
 html.yt-split-active #below #actions #menu,

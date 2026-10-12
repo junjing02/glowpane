@@ -1639,12 +1639,15 @@
     });
     moveNode(secondary, sidePane);
 
-    // Two-window pop-up: its window is narrow, and in YouTube's narrow
-    // (single-column) layout the recommendations list can be moved out of
-    // #secondary into the area under the player, which would put it inside
-    // our description pane. Bring it back; a no-op when it's already there.
-    if (windowRole === "companion") {
-      const results = document.querySelector("ytd-watch-next-secondary-results-renderer");
+    // In YouTube's narrow (single-column) layout, which starts at a wider
+    // window than our own activation threshold and always applies in the
+    // two-window pop-up, YouTube moves the recommendations list out of
+    // #secondary into the area under the player. That put it inside our
+    // description pane and left Recommended empty (reported after narrowing
+    // the window and widening it again). Bring it back; a no-op when it's
+    // already there. teardownLayout() puts it where YouTube wants it.
+    {
+      const results = watchRoot().querySelector("ytd-watch-next-secondary-results-renderer");
       const related = results && results.parentElement && results.parentElement.id === "related" ? results.parentElement : results;
       if (related && !secondary.contains(related)) {
         moveNode(related, secondary.querySelector("#secondary-inner") || secondary);
@@ -1726,6 +1729,31 @@
   // moved nodes and injected wrapper divs in place past that point
   // confused YouTube's own cleanup and broke the next page (e.g. going
   // back to the home page).
+  // After a teardown the recommendations list must sit where YouTube's
+  // CURRENT layout shows it: in #secondary when YouTube is showing that
+  // column, under the player otherwise. Putting it back where we found it
+  // isn't enough, because YouTube may have switched between its one- and
+  // two-column layouts while the split was on, and it only moves the list
+  // itself at the moment of such a switch. Reported: recommendations
+  // missing in YouTube's own layout after narrowing the window.
+  function placeRelatedNatively() {
+    const root = watchRoot();
+    if (root === document || !isWatchPage() || root.getClientRects().length === 0) return;
+    const results = root.querySelector("ytd-watch-next-secondary-results-renderer");
+    if (!results) return;
+    const secondary = root.querySelector("#secondary");
+    const below = root.querySelector("#below");
+    const secondaryShown = !!secondary && secondary.getClientRects().length > 0 && secondary.offsetWidth > 0;
+    // Move the whole #related slot when the list sits in one, as YouTube
+    // styles the list through it.
+    const unit = results.parentElement && results.parentElement.id === "related" ? results.parentElement : results;
+    if (secondaryShown) {
+      if (!secondary.contains(results)) (secondary.querySelector("#secondary-inner") || secondary).appendChild(unit);
+    } else if (below && !below.contains(results)) {
+      below.appendChild(unit);
+    }
+  }
+
   function teardownLayout() {
     document.documentElement.classList.remove(
       "yt-split-active",
@@ -1772,6 +1800,7 @@
     if (resizer) resizer.remove();
 
     teardownAmbient();
+    placeRelatedNatively();
     // #below is back in YouTube's own layout; fix the Subscribe button
     // there too once YouTube has re-rendered it.
     scheduleSubscribeRepair();
