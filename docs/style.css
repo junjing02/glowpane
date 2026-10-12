@@ -2789,7 +2789,7 @@ img {
 /* Phones: every mockup keeps its landscape, desktop-sized window, because
    that is the only shape the extension works in (it stays off in narrow
    or portrait windows). The window is laid out at a fixed 760px design
-   width and shrunk to fit with zoom (script.js sets --mock-zoom from the
+   width and shrunk to fit (script.js sets --mock-zoom from the
    real width; the fallback suits a ~390px phone), so everything inside
    keeps its desktop proportions. The stacked, phone-shaped layouts that
    used to be here showed a window the extension would never split. */
@@ -2797,8 +2797,18 @@ img {
   .compare-window-landscape,
   .tw-stage,
   .glow-stage {
+    /* Shrunk with a transform, not zoom: browsers enforce a minimum font
+       size AFTER zoom, so the mock's small labels stopped shrinking and
+       came out large next to everything else (reported). A transform
+       scales the finished picture, text included. It doesn't change the
+       layout box, so the negative margins take back the unused space
+       (760 x 475 is the 16:10 window at the design width). */
+    --mock-zoom: 0.44;
     width: 760px;
-    zoom: var(--mock-zoom, 0.44);
+    transform: scale(var(--mock-zoom));
+    transform-origin: 0 0;
+    margin-right: calc(760px * (var(--mock-zoom) - 1));
+    margin-bottom: calc(475px * (var(--mock-zoom) - 1));
     -webkit-text-size-adjust: none;
     text-size-adjust: none;
   }
