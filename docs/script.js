@@ -8,6 +8,27 @@ if (nav) {
   window.addEventListener("scroll", updateNav, { passive: true });
 }
 
+// Phones: the mock windows keep their landscape, desktop layout (the only
+// shape the extension works in). style.css lays them out 760px wide and
+// shrinks them with zoom; this sets the exact factor from the real width.
+(function fitMocks() {
+  const DESIGN_WIDTH = 760;
+  const mocks = document.querySelectorAll(".compare-window-landscape, .tw-stage, .glow-stage");
+  const phone = window.matchMedia("(max-width: 640px)");
+  const fit = () => {
+    mocks.forEach((el) => {
+      if (!phone.matches) {
+        el.style.removeProperty("--mock-zoom");
+        return;
+      }
+      const width = el.parentElement.clientWidth;
+      if (width > 0) el.style.setProperty("--mock-zoom", (width / DESIGN_WIDTH).toFixed(4));
+    });
+  };
+  fit();
+  window.addEventListener("resize", fit);
+})();
+
 // Copy buttons (chrome://extensions can't be opened from a link). Hidden
 // in the HTML and only revealed where the Clipboard API is available.
 if (navigator.clipboard && window.isSecureContext) {
@@ -182,8 +203,12 @@ if (twDemo) {
     if (!el) return;
     const r = el.getBoundingClientRect();
     const s = stage.getBoundingClientRect();
-    cursor.style.left = `${r.left - s.left + Math.min(r.width * xFraction, 40)}px`;
-    cursor.style.top = `${r.top - s.top + r.height * 0.5}px`;
+    // As percentages of the stage, so the spot is right at any zoom (the
+    // stage is zoomed down on phones).
+    if (!s.width || !s.height) return;
+    const dx = Math.min(r.width * xFraction, s.width * 0.04);
+    cursor.style.left = `${((r.left - s.left + dx) / s.width) * 100}%`;
+    cursor.style.top = `${((r.top - s.top + r.height * 0.5) / s.height) * 100}%`;
   }
 
   // Off the bottom right corner, out of sight.
