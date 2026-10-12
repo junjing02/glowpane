@@ -1,7 +1,7 @@
 # Packages only the files the extension needs (manifest, everything in src/:
-# content script and stylesheet, background worker, toolbar panel; icons) into split-for-youtube.zip and attaches it to the GitHub
+# content script and stylesheet, background worker, toolbar panel; icons) into glowpane.zip and attaches it to the GitHub
 # Release for the manifest's version. The landing page and README link to
-# releases/latest/download/split-for-youtube.zip, so the download always
+# releases/latest/download/glowpane.zip, so the download always
 # matches main without uploading anything by hand.
 name: Build extension ZIP
 
@@ -26,13 +26,15 @@ jobs:
 
       - name: Build ZIP
         run: |
-          mkdir -p split-for-youtube/src split-for-youtube/icons
-          cp manifest.json split-for-youtube/
-          cp src/*.js src/*.css src/*.html split-for-youtube/src/
-          cp icons/icon16.png icons/icon48.png icons/icon128.png split-for-youtube/icons/
-          zip -r split-for-youtube.zip split-for-youtube
+          mkdir -p glowpane/src glowpane/icons
+          cp manifest.json glowpane/
+          cp src/*.js src/*.css src/*.html glowpane/src/
+          cp icons/icon16.png icons/icon48.png icons/icon128.png glowpane/icons/
+          zip -r glowpane.zip glowpane
           # Chrome Web Store upload: manifest.json must sit at the top level.
-          (cd split-for-youtube && zip -r ../split-for-youtube-store.zip .)
+          (cd glowpane && zip -r ../glowpane-store.zip .)
+          # Old download links (before the rename) still ask for this name.
+          cp glowpane.zip split-for-youtube.zip
 
       - name: Publish to the release for this version
         env:
@@ -41,10 +43,10 @@ jobs:
           VERSION=$(jq -r .version manifest.json)
           TAG="v$VERSION"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" split-for-youtube.zip split-for-youtube-store.zip --clobber
+            gh release upload "$TAG" glowpane.zip glowpane-store.zip split-for-youtube.zip --clobber
           else
-            gh release create "$TAG" split-for-youtube.zip split-for-youtube-store.zip \
+            gh release create "$TAG" glowpane.zip glowpane-store.zip split-for-youtube.zip \
               --title "Glowpane $VERSION" \
-              --notes "Unzip, then in chrome://extensions turn on Developer mode, click Load unpacked and choose the split-for-youtube folder." \
+              --notes "Unzip, then in chrome://extensions turn on Developer mode, click Load unpacked and choose the glowpane folder." \
               --latest
           fi

@@ -9,20 +9,20 @@
 <p align="center"><sub>Formerly Split for YouTube.</sub></p>
 
 <p align="center">
-  <a href="https://github.com/junjing02/split-for-youtube/releases/latest"><img src="https://img.shields.io/github/v/release/junjing02/split-for-youtube?label=version&color=111316" alt="Latest version" /></a>
-  <a href="https://junjing02.github.io/split-for-youtube/"><img src="https://img.shields.io/badge/site-live%20demo-111316" alt="Live demo" /></a>
+  <a href="https://github.com/junjing02/glowpane/releases/latest"><img src="https://img.shields.io/github/v/release/junjing02/glowpane?label=version&color=111316" alt="Latest version" /></a>
+  <a href="https://junjing02.github.io/glowpane/"><img src="https://img.shields.io/badge/site-live%20demo-111316" alt="Live demo" /></a>
   <img src="https://img.shields.io/badge/manifest-v3-111316" alt="Manifest V3" />
 </p>
 
 <p align="center">
   A free Chrome extension that puts the video on the left and everything else on the right.<br />
-  <a href="https://junjing02.github.io/split-for-youtube/">See it in action →</a>
+  <a href="https://junjing02.github.io/glowpane/">See it in action →</a>
 </p>
 
 <p align="center">
-  <a href="https://junjing02.github.io/split-for-youtube/demo.mp4"><img src="docs/demo.webp" alt="Demo: YouTube's comments push the video off-screen; Glowpane keeps the video on the left with the comments beside it, adds ambient light, and can move the comments to a second window." width="100%" /></a>
+  <a href="https://junjing02.github.io/glowpane/demo.mp4"><img src="docs/demo.webp" alt="Demo: YouTube's comments push the video off-screen; Glowpane keeps the video on the left with the comments beside it, adds ambient light, and can move the comments to a second window." width="100%" /></a>
   <br />
-  <sub><a href="https://junjing02.github.io/split-for-youtube/demo.mp4">▶ Watch the demo in full quality</a></sub>
+  <sub><a href="https://junjing02.github.io/glowpane/demo.mp4">▶ Watch the demo in full quality</a></sub>
 </p>
 
 ---
@@ -41,9 +41,9 @@
 
 ## Install
 
-1. [Download `split-for-youtube.zip`](https://github.com/junjing02/split-for-youtube/releases/latest/download/split-for-youtube.zip) and unzip it.
+1. [Download `glowpane.zip`](https://github.com/junjing02/glowpane/releases/latest/download/glowpane.zip) and unzip it.
 2. Open `chrome://extensions` and turn on **Developer mode**.
-3. Click **Load unpacked** and choose the `split-for-youtube` folder.
+3. Click **Load unpacked** and choose the `glowpane` folder.
 
 Works in Chrome, Edge, Brave and other Chromium browsers. To update, replace the folder with the latest download and click reload on the extension's card.
 
