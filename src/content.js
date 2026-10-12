@@ -1614,7 +1614,15 @@
       // a channel you are NOT subscribed to; treating that as "bell
       // showing" hid the Subscribe button itself (reported missing).
       const bellButton = bell.querySelector("button");
-      const bellShown = !!bellButton && bellButton.offsetWidth > 0 && bellButton.offsetHeight > 0;
+      // Confirmed from a diagnostics report: on a channel you're not
+      // subscribed to, the bell is still laid out at full size (162x40)
+      // with visibility: hidden. Size alone said "showing", so the
+      // Subscribe button stayed hidden by us. Visibility must count too.
+      const bellShown =
+        !!bellButton &&
+        bellButton.offsetWidth > 0 &&
+        bellButton.offsetHeight > 0 &&
+        getComputedStyle(bellButton).visibility === "visible";
       // And only the broken look this exists for: the two pills STACKED
       // (the separate button sitting above the bell). Side by side, or
       // anything else, is left to YouTube.
