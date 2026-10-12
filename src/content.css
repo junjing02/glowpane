@@ -847,15 +847,15 @@ html.yt-split-active #below #actions #flexible-item-buttons > :not(:has(*)) {
    its menu can no longer measure its own width. */
 html.yt-split-active #below #top-row #owner,
 html.yt-split-active #below #top-row #actions,
-html.yt-split-active #below #top-row #actions-inner,
-html.yt-split-active #below #top-row #actions #menu,
-html.yt-split-active #below #top-row #actions ytd-menu-renderer,
-html.yt-split-active #below #top-row #actions #top-level-buttons-computed,
-html.yt-split-active #below #top-row #actions #flexible-item-buttons {
+html.yt-split-active #below #actions #actions-inner,
+html.yt-split-active #below #actions #menu,
+html.yt-split-active #below #actions ytd-menu-renderer,
+html.yt-split-active #below #actions #top-level-buttons-computed,
+html.yt-split-active #below #actions #flexible-item-buttons {
   display: contents !important;
 }
 
-html.yt-split-active #below #top-row #actions ytd-menu-renderer > * {
+html.yt-split-active #below #actions ytd-menu-renderer > * {
   flex: 0 0 auto !important;
 }
 
@@ -941,6 +941,26 @@ html.yt-split-active #below #actions {
 html.yt-split-active #below #actions-inner,
 html.yt-split-active #below #actions #menu {
   justify-content: flex-start !important;
+}
+
+/* v1.5.4, from a second screenshot: the like / Share row was still
+   centered across the pane and sat right under the Subscribe button with
+   no gap. That is what a full-width #actions row OUTSIDE #top-row looks
+   like (YouTube's narrow "actions on their own line" layout), with its
+   top margin removed by the rule above. So #actions is handled both
+   ways: inside #top-row it is flattened (rule further up, more specific);
+   anywhere else it is its own left-aligned row of buttons, 8px below the
+   channel row, with the same 8px gap between its buttons. Its inner
+   wrappers are flattened in both cases. */
+html.yt-split-active #below #actions {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  width: 100% !important;
+  margin: 8px 0 0 !important;
 }
 
 /* Subscribe button (+ notification bell): visible again, by request. It
