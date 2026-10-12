@@ -111,6 +111,12 @@
 
 html {
   scroll-behavior: smooth;
+  /* Phone browsers enlarge text they think is too small for a wide block
+     ("font boosting"). The mockups are wide blocks shrunk to fit, so
+     their tiny labels were blown up out of proportion. Sizes here are
+     chosen on purpose; keep them as written. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -2793,6 +2799,8 @@ img {
   .glow-stage {
     width: 760px;
     zoom: var(--mock-zoom, 0.44);
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
   }
 
   .morph-caption {
