@@ -81,3 +81,23 @@ document.getElementById("shortcuts").addEventListener("click", (e) => {
   e.preventDefault();
   chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
 });
+
+// Copy diagnostics: asks the YouTube tab in front for a text description
+// of its layout and puts it on the clipboard, to paste into a bug report.
+const diagnostics = document.getElementById("diagnostics");
+diagnostics.addEventListener("click", async (e) => {
+  e.preventDefault();
+  const say = (text) => {
+    diagnostics.textContent = text;
+    setTimeout(() => (diagnostics.textContent = "Copy diagnostics"), 2500);
+  };
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const report = await chrome.tabs.sendMessage(tab.id, { type: "diagnose" });
+    if (!report) throw new Error("no report");
+    await navigator.clipboard.writeText(report);
+    say("Copied");
+  } catch (err) {
+    say("Open a YouTube video first");
+  }
+});

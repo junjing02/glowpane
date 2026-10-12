@@ -1615,7 +1615,12 @@
       // showing" hid the Subscribe button itself (reported missing).
       const bellButton = bell.querySelector("button");
       const bellShown = !!bellButton && bellButton.offsetWidth > 0 && bellButton.offsetHeight > 0;
-      if (bellShown && isRendered(shape)) {
+      // And only the broken look this exists for: the two pills STACKED
+      // (the separate button sitting above the bell). Side by side, or
+      // anything else, is left to YouTube.
+      const stacked =
+        bellShown && isRendered(shape) && shape.getBoundingClientRect().bottom <= bellButton.getBoundingClientRect().top + 4;
+      if (stacked) {
         shape.style.setProperty("display", "none", "important");
         shape.setAttribute(SUB_HIDDEN_ATTR, "");
       } else if (!bellShown && shape.hasAttribute(SUB_HIDDEN_ATTR)) {
@@ -1623,6 +1628,79 @@
         shape.removeAttribute(SUB_HIDDEN_ATTR);
       }
     });
+  }
+
+  // ---- Diagnostics ----
+  // "Copy diagnostics" in the toolbar panel: a plain-text picture of the
+  // description pane's channel row as it really is on this page (tags, ids,
+  // computed display, sizes), for layout problems that can't be seen from
+  // the code. Structure only: no titles, names, comments or other text.
+  function describeEl(el) {
+    const cs = getComputedStyle(el);
+    const r = el.getBoundingClientRect();
+    let out = el.tagName.toLowerCase();
+    if (el.id) out += "#" + el.id;
+    const classes = Array.from(el.classList).slice(0, 3).join(".");
+    if (classes) out += "." + classes;
+    out += ` [${cs.display}`;
+    if (cs.visibility !== "visible") out += " " + cs.visibility;
+    if (cs.opacity !== "1") out += " op" + cs.opacity;
+    if (cs.display.includes("flex")) out += ` ${cs.flexDirection} ${cs.flexWrap} gap:${cs.gap}`;
+    out += ` ${Math.round(r.width)}x${Math.round(r.height)} @${Math.round(r.left)},${Math.round(r.top)}]`;
+    if (el.hasAttribute("hidden")) out += " hidden-attr";
+    if (el.hasAttribute(SUB_HIDDEN_ATTR)) out += " hidden-by-extension";
+    return out;
+  }
+
+  function describeTree(root, maxDepth, maxNodes) {
+    const lines = [];
+    const walk = (el, depth) => {
+      if (lines.length >= maxNodes) return;
+      lines.push("  ".repeat(depth) + describeEl(el));
+      if (depth >= maxDepth || el.tagName.toLowerCase() === "svg") return;
+      Array.from(el.children).forEach((child) => walk(child, depth + 1));
+    };
+    walk(root, 0);
+    if (lines.length >= maxNodes) lines.push("... (cut)");
+    return lines;
+  }
+
+  function buildDiagnostics() {
+    const root = watchRoot();
+    const html = document.documentElement;
+    const lines = [
+      "Glowpane diagnostics " + chrome.runtime.getManifest().version,
+      `page: ${location.pathname} window: ${window.innerWidth}x${window.innerHeight} dark: ${html.hasAttribute("dark")}`,
+      "html classes: " + Array.from(html.classList).filter((c) => c.startsWith("yt-")).join(" "),
+      "role: " + windowRole + " settings: " + JSON.stringify(settings),
+      "",
+      "== Subscribe elements ==",
+    ];
+    const scope = root === document ? document : root;
+    const subs = Array.from(scope.querySelectorAll("*")).filter(
+      (el) => /subscribe|notification-preference/i.test(el.tagName + " " + el.id) && el.tagName.toLowerCase() !== "svg"
+    );
+    if (!subs.length) lines.push("(none found)");
+    subs.slice(0, 20).forEach((el) => {
+      lines.push(describeEl(el));
+      // The chain up to #below, to see which ancestor hides or squeezes it.
+      let parent = el.parentElement;
+      let depth = 1;
+      while (parent && parent.id !== "below" && depth < 12) {
+        lines.push("  ".repeat(depth) + "^ " + describeEl(parent));
+        parent = parent.parentElement;
+        depth++;
+      }
+    });
+    const topRow = scope.querySelector("#below #top-row") || scope.querySelector("#top-row");
+    lines.push("", "== #top-row tree ==");
+    if (topRow) lines.push(...describeTree(topRow, 7, 160));
+    else lines.push("(no #top-row)");
+    const below = scope.querySelector("#below");
+    lines.push("", "== #below outline ==");
+    if (below) lines.push(...describeTree(below, 4, 80));
+    else lines.push("(no #below)");
+    return lines.join("\n");
   }
 
   // A couple of passes, since YouTube can re-render the button a moment
@@ -2786,6 +2864,14 @@
       else if (msg.type === "savePlaybackRate") {
         savePlaybackRate();
         sendResponse(true);
+      } else if (msg.type === "diagnose" && window.top === window) {
+        let report;
+        try {
+          report = buildDiagnostics();
+        } catch (err) {
+          report = "Glowpane diagnostics failed: " + err;
+        }
+        sendResponse(report);
       }
     });
     chrome.storage.onChanged.addListener((changes, area) => {
