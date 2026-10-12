@@ -436,6 +436,61 @@
     if (dragState) dragState.maxSide = Math.min(dragState.maxSide, corrected);
   }
 
+  // Drag the main divider far past the side pane's minimum width (toward
+  // the window edge) and release: the side pane closes and the video takes
+  // the whole width, laid out like "all panes hidden" (.yt-split-solo). A
+  // thin strip at that edge (#yt-split-reopen) brings it back. Kept across
+  // videos in this tab, never stored. Normal split only.
+  const CLOSE_SNAP_PX = 200;
+  const CLOSING_CLASS = "yt-split-closing";
+  const REOPEN_ID = "yt-split-reopen";
+  let sideClosed = false;
+
+  function setSideClosed(closed) {
+    sideClosed = closed;
+    if (!isWatchPage()) return;
+    const resync = () => {
+      constrainVideoSize();
+      if (!sideClosed) {
+        enforceMinVideoHeight();
+        preventColumnOverlap();
+      }
+      nudgePlayerResize();
+    };
+    ensureLayout();
+    resync();
+    // Again once the new grid has really been laid out (same reason as
+    // enterRecsFocusMode's repeated nudges).
+    setTimeout(resync, 200);
+  }
+
+  function ensureReopenStrip(columns) {
+    let strip = document.getElementById(REOPEN_ID);
+    if (!sideClosed || windowRole !== "none") {
+      if (strip) strip.remove();
+      return;
+    }
+    if (!strip) {
+      strip = document.createElement("div");
+      strip.id = REOPEN_ID;
+      strip.setAttribute("role", "button");
+      strip.setAttribute("aria-label", "Show the side pane");
+      strip.title = "Show the side pane";
+      strip.tabIndex = 0;
+      // No focus on click, so the next spacebar press still reaches the player.
+      strip.addEventListener("mousedown", (e) => e.preventDefault());
+      strip.addEventListener("click", () => setSideClosed(false));
+      strip.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        e.stopPropagation();
+        setSideClosed(false);
+      });
+    }
+    strip.classList.toggle("is-left", !!settings.videoOnRight);
+    if (strip.parentElement !== columns) columns.appendChild(strip);
+  }
+
   function onDocumentMouseMove(e) {
     if (!dragState) return;
     // rect is captured once at mousedown (see setupResizer) rather than
@@ -461,6 +516,10 @@
     // on the left, so dragging right widens it instead.
     const dir = isSwapped() ? -1 : 1;
     let px = dragState.startWidth + dir * (dragState.startX - e.clientX);
+    // Pulled well past the minimum: releasing here closes the side pane
+    // (dimmed meanwhile as the cue).
+    dragState.willClose = windowRole === "none" && px < CLOSE_SNAP_PX;
+    document.documentElement.classList.toggle(CLOSING_CLASS, dragState.willClose);
     px = Math.min(clampSideWidth(px, rect, dragState.ratio), dragState.maxSide);
     pendingSideWidth = px;
     if (!sideWidthFrameScheduled) {
@@ -471,6 +530,19 @@
 
   function onDocumentMouseUp() {
     if (!dragState) return;
+    if (dragState.willClose) {
+      // Put the width back to where the drag began, so reopening shows the
+      // pane as it was, then close it.
+      const startWidth = dragState.startWidth;
+      dragState = null;
+      lastDragEndAt = Date.now();
+      document.body.classList.remove("yt-split-resizing");
+      document.documentElement.classList.remove(CLOSING_CLASS);
+      pendingSideWidth = null;
+      if (startWidth > 0) setSideWidth(startWidth);
+      setSideClosed(true);
+      return;
+    }
     const columnsWidth = dragState.rect.width;
     dragState = null;
     lastDragEndAt = Date.now();
@@ -1397,10 +1469,11 @@
   // not the manifest version, so small fixes don't nag. New installs get
   // the first-run hint only: dismissing it marks this note seen too.
   const WHATS_NEW = {
-    version: "1.5",
+    version: "1.6",
     tips: [
       "Ambient light now works in YouTube's light theme too, with its own strength.",
-      "Hide the description, Recommended or Comments. Hide all three for the video alone.",
+      "Video only: drag the main divider to the window edge. Click the strip at that edge to bring the side pane back.",
+      "Hide the description, Recommended or Comments for good in the settings.",
       "Pick a default side pane width.",
       "Find these under the extension's toolbar icon.",
     ],
@@ -1466,6 +1539,7 @@
   // keeps its side pane.
   function isVideoOnly() {
     if (windowRole !== "none") return false;
+    if (sideClosed) return true;
     if (settings.showDescription || settings.showRecommendations || settings.showComments) return false;
     return !hasLiveChat(watchRoot());
   }
@@ -1627,6 +1701,7 @@
 
     if (windowRole === "companion") teardownAmbient();
     else ensureAmbient(columns);
+    ensureReopenStrip(columns);
 
     // #below (title/channel/stats/description) moves out of the video
     // column entirely and into a small collapsible section here.
@@ -1698,7 +1773,7 @@
       if (child === primary || child === resizer || child === sidePane) return;
       // Never the video column itself, whichever #primary was picked above.
       if (child.id === "primary") return;
-      if (child.id === AMBIENT_ID || child.id === AMBIENT_GRAIN_ID) return;
+      if (child.id === AMBIENT_ID || child.id === AMBIENT_GRAIN_ID || child.id === REOPEN_ID) return;
       moveNode(child, sidePane);
     });
 
@@ -1798,6 +1873,10 @@
 
     const resizer = document.getElementById("yt-split-resizer");
     if (resizer) resizer.remove();
+
+    const reopen = document.getElementById(REOPEN_ID);
+    if (reopen) reopen.remove();
+    document.documentElement.classList.remove(CLOSING_CLASS);
 
     teardownAmbient();
     placeRelatedNatively();

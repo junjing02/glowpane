@@ -33,7 +33,7 @@
 - **Ambient light** — the video's colors glow softly behind the page, in light theme too, which YouTube itself doesn't offer.
 - **Two windows** — keep the video here and the comments in a second window, always in sync.
 - **Thoughtful defaults** — live chat, light and dark themes, and the end of a video are all handled for you.
-- **Yours to tune** — a toolbar panel to set the glow strength, hide the description, recommendations or comments (all three for the video alone), choose the side pane's width, remember your layout or put the video on the right.
+- **Yours to tune** — a toolbar panel to set the glow strength, hide the description, recommendations or comments (all three for the video alone; or just drag the divider to the window edge for a quick video-only view), choose the side pane's width, remember your layout or put the video on the right.
 - **Keyboard friendly** — shortcuts for the split and Two windows, and dividers and pane titles you can reach with Tab.
 - **Out of the way** — theater mode and small windows get YouTube's normal layout.
 

@@ -1496,3 +1496,60 @@ html.yt-split-active.yt-split-hide-desc:not(#_#_#_) #yt-split-desc-pane {
 html.yt-split-active.yt-split-hide-desc.yt-split-wide-side:not(#_#_#_) #yt-split-side-pane {
   row-gap: 0 !important;
 }
+
+/* Closing the side pane by dragging the main divider to the window edge
+   (content.js setSideClosed). While the drag is past the point where
+   releasing will close it, the pane dims as the cue. Closed, a thin strip
+   on that edge (#yt-split-reopen, a fixed child of #columns) brings it
+   back: barely visible until hovered, so it doesn't distract from the
+   video. Hidden in fullscreen like the ambient layers. */
+html.yt-split-active.yt-split-closing #yt-split-side-pane {
+  opacity: 0.3;
+  transition: opacity 0.12s ease;
+}
+
+#yt-split-reopen {
+  position: fixed;
+  top: var(--ytd-masthead-height, 56px);
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  z-index: 3;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+#yt-split-reopen.is-left {
+  right: auto;
+  left: 0;
+}
+
+#yt-split-reopen::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 56px;
+  border-radius: 2px;
+  transform: translate(-50%, -50%);
+  background: var(--split-border-strong);
+  transition: background-color 0.15s ease, height 0.15s ease;
+}
+
+#yt-split-reopen:hover,
+#yt-split-reopen:focus-visible {
+  background: var(--split-pane-bg);
+  outline: none;
+}
+
+#yt-split-reopen:hover::after,
+#yt-split-reopen:focus-visible::after {
+  height: 96px;
+  background: var(--split-text-dim);
+}
+
+html:has(:fullscreen) #yt-split-reopen,
+html:has(ytd-watch-flexy[fullscreen]) #yt-split-reopen {
+  display: none;
+}
