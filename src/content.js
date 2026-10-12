@@ -1609,7 +1609,12 @@
       const shape = renderer.querySelector("#subscribe-button-shape");
       const bell = renderer.querySelector("#notification-preference-button");
       if (!shape || !bell) return;
-      const bellShown = isRendered(bell) && bell.querySelector("button") != null;
+      // The bell counts only when its button really has a size. Its empty
+      // container can have a layout box (and a hidden <button> inside) on
+      // a channel you are NOT subscribed to; treating that as "bell
+      // showing" hid the Subscribe button itself (reported missing).
+      const bellButton = bell.querySelector("button");
+      const bellShown = !!bellButton && bellButton.offsetWidth > 0 && bellButton.offsetHeight > 0;
       if (bellShown && isRendered(shape)) {
         shape.style.setProperty("display", "none", "important");
         shape.setAttribute(SUB_HIDDEN_ATTR, "");

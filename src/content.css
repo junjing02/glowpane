@@ -826,7 +826,7 @@ html.yt-split-active #below #actions #flexible-item-buttons > * {
   margin: 0 !important;
 }
 
-html.yt-split-active #below #owner > :not(:has(*)),
+html.yt-split-active #below #owner > :not(:has(*)):not(#subscribe-button),
 html.yt-split-active #below #actions ytd-menu-renderer > :not(:has(*)),
 html.yt-split-active #below #actions #top-level-buttons-computed > :not(:has(*)),
 html.yt-split-active #below #actions #flexible-item-buttons > :not(:has(*)) {
