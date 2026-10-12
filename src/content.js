@@ -845,8 +845,26 @@
   // actually has the expected content; only fall back to "just the first
   // one" if none of them do (nothing's loaded yet — the normal, temporary
   // case retries already handle fine).
+  // The watch page's own root. YouTube keeps other pages in the document
+  // while they're hidden (the home page under the miniplayer, for one), and
+  // the home page has its own #primary and #secondary. Every lookup of
+  // those ids must stay inside the watch page, or the home page's elements
+  // get picked up, styled and moved.
+  function watchRoot() {
+    return document.querySelector("ytd-watch-flexy:not([hidden])") || document.querySelector("ytd-watch-flexy") || document;
+  }
+
+  // Miniplayer ("i" key): the URL is another page, but going back to the
+  // video can pass through /watch while the player still sits in the
+  // miniplayer. Building then would lay out a watch page with no video.
+  function isMiniplayerActive() {
+    if (document.querySelector("ytd-app[miniplayer-is-active], ytd-miniplayer[active]")) return true;
+    const video = document.querySelector("ytd-miniplayer video");
+    return !!video && video.getClientRects().length > 0;
+  }
+
   function findBestById(id, hasContent) {
-    const candidates = document.querySelectorAll("#" + id);
+    const candidates = watchRoot().querySelectorAll("#" + id);
     if (candidates.length <= 1) return candidates[0] || null;
     // Confirmed via a user-reported console capture that this really does
     // happen on real navigations — no longer logging it routinely now that
@@ -1449,8 +1467,7 @@
   function isVideoOnly() {
     if (windowRole !== "none") return false;
     if (settings.showDescription || settings.showRecommendations || settings.showComments) return false;
-    const secondary = document.querySelector("#secondary");
-    return !(secondary && hasLiveChat(secondary));
+    return !hasLiveChat(watchRoot());
   }
 
   // "Show description" / "Show recommendations" / "Show comments" (toolbar
@@ -1568,7 +1585,14 @@
       return;
     }
 
-    const columns = document.querySelector("#columns");
+    if (isMiniplayerActive()) {
+      // The video is in the miniplayer, not on this page: nothing to split
+      // yet. start()'s retries build the layout once it's back.
+      teardownLayout();
+      return;
+    }
+
+    const columns = watchRoot().querySelector("#columns");
     const secondary = findBestById(
       "secondary",
       (el) =>
@@ -1606,7 +1630,7 @@
 
     // #below (title/channel/stats/description) moves out of the video
     // column entirely and into a small collapsible section here.
-    const below = primary.querySelector("#below") || document.querySelector("#below");
+    const below = primary.querySelector("#below") || watchRoot().querySelector("#below");
     ensureDescPane(sidePane, below);
 
     ensurePaneHeader(secondary, hasLiveChat(secondary) ? "Live Chat" : "Recommended", {
@@ -1669,6 +1693,8 @@
     // grid cell.
     Array.from(columns.children).forEach((child) => {
       if (child === primary || child === resizer || child === sidePane) return;
+      // Never the video column itself, whichever #primary was picked above.
+      if (child.id === "primary") return;
       if (child.id === AMBIENT_ID || child.id === AMBIENT_GRAIN_ID) return;
       moveNode(child, sidePane);
     });
@@ -1729,14 +1755,15 @@
     restoreMovedNodes();
     restoreWidenedAncestors();
 
-    const secondary = document.getElementById("secondary");
-    if (secondary) {
+    // Every #secondary, not just the first in the document: the home page
+    // has one too, and ours may not be first.
+    document.querySelectorAll("#secondary").forEach((secondary) => {
       const header = secondary.querySelector(":scope > .yt-split-pane-header");
       if (header) header.remove();
       // #secondary is YouTube's own element and outlives our layout; don't
       // leave our collapsed state on it.
       secondary.classList.remove("yt-split-pane-collapsed");
-    }
+    });
 
     const sidePane = document.getElementById("yt-split-side-pane");
     if (sidePane) sidePane.remove();
@@ -1962,8 +1989,8 @@
   // file for how a live toggle (button click or "t") gets noticed and
   // re-evaluated without needing a full navigation.
   function isTheaterMode() {
-    const flexy = document.querySelector("ytd-watch-flexy");
-    return !!flexy && flexy.hasAttribute("theater");
+    const flexy = watchRoot();
+    return flexy !== document && flexy.hasAttribute("theater");
   }
 
   // Whether the side pane is currently widened because the video ended
@@ -1996,7 +2023,7 @@
     // still reverts to the normal default (exitRecsFocusMode(), existing
     // behavior) rather than some in-between state.
     hasManualSideWidth = false;
-    const secondary = document.getElementById("secondary");
+    const secondary = document.querySelector("#yt-split-side-pane #secondary");
     if (secondary && secondary.classList.contains("yt-split-pane-collapsed")) {
       secondary.classList.remove("yt-split-pane-collapsed");
       secondaryCollapsed = false;
@@ -2466,7 +2493,7 @@
     "click",
     (e) => {
       if (!document.documentElement.classList.contains("yt-split-active")) return;
-      const secondary = document.getElementById("secondary");
+      const secondary = document.querySelector("#yt-split-side-pane #secondary");
       const commentsPane = document.getElementById("yt-split-comments-pane");
       const inScope =
         (secondary && secondary.contains(e.target)) ||
