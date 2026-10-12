@@ -1320,13 +1320,15 @@ img {
   font-size: 17px;
 }
 
-/* Glow: the one section about the ambient light itself. A small "video"
-   on a stage with its own colors blurred wide behind it, the same idea as
-   the extension (and the icon). The only color outside the demos. */
+/* Glow: the one section about the ambient light itself. A realistic
+   mock of the split (the two-window demo's main window, reused as a still:
+   .tw-window and everything inside it) with the glow turned up a little,
+   spilling onto the page behind the window like the other demos. The mock
+   gets the wider column so its fixed-size details keep their proportions. */
 .glow-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-  gap: 72px;
+  grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.5fr);
+  gap: 56px;
   align-items: center;
 }
 
@@ -1351,45 +1353,39 @@ img {
 .glow-stage {
   position: relative;
   isolation: isolate;
-  display: grid;
-  place-items: center;
-  aspect-ratio: 4 / 3;
-  overflow: hidden;
-  border-radius: 24px;
-  background: var(--mock-bg);
-  box-shadow: var(--shadow-window);
+  aspect-ratio: 16 / 10;
 }
 
-.glow-aura {
+.glow-stage::before {
+  content: "";
   position: absolute;
   z-index: -1;
-  inset: -10%;
-  background: radial-gradient(ellipse 42% 52% at 30% 40%, rgba(255, 184, 104, 0.9), transparent 70%),
-    radial-gradient(ellipse 40% 50% at 55% 72%, rgba(255, 96, 150, 0.8), transparent 70%),
-    radial-gradient(ellipse 50% 58% at 80% 38%, rgba(124, 104, 255, 0.7), transparent 70%);
-  background-size: 140% 140%;
-  filter: blur(56px);
-  opacity: var(--mock-glow);
-  animation: sceneDrift 14s ease-in-out infinite alternate;
+  inset: 4% -4% -6%;
+  pointer-events: none;
+  border-radius: 40px;
+  background: radial-gradient(50% 60% at 28% 45%, rgba(255, 184, 104, 0.9), transparent 70%),
+    radial-gradient(45% 55% at 55% 75%, rgba(255, 96, 150, 0.8), transparent 70%),
+    radial-gradient(50% 60% at 82% 40%, rgba(124, 104, 255, 0.6), transparent 70%);
+  filter: blur(72px);
+  opacity: var(--spill);
 }
 
-.glow-video {
-  position: relative;
-  width: 62%;
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
-  border-radius: 12px;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 24px 48px -20px rgba(0, 0, 0, 0.5);
+.glow-window {
+  left: 0;
+  width: 100%;
 }
 
-.glow-scene {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse 60% 70% at 30% 35%, rgba(255, 184, 104, 0.6), transparent 70%),
-    radial-gradient(ellipse 50% 60% at 78% 70%, rgba(255, 96, 150, 0.5), transparent 70%),
-    linear-gradient(160deg, #1d1430, #0b0a12 70%);
-  background-size: 140% 140%;
-  animation: sceneDrift 14s ease-in-out infinite alternate;
+.glow-stage .tw-ambient-a {
+  opacity: min(1, calc(var(--mock-glow) * 1.15));
+}
+
+.glow-stage .caret {
+  opacity: 1;
+}
+
+.glow-stage .mock-progress .tw-progress {
+  width: 42%;
+  animation: none;
 }
 
 @media (max-width: 860px) {
@@ -1399,10 +1395,226 @@ img {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .glow-aura,
-  .glow-scene {
+/* The mock also plays the "drag the divider to the edge" move on a loop,
+   in CSS only: the cursor grabs the divider and pulls it to the window
+   edge (the side pane dims, as in the extension), the pane closes and the
+   video takes the width with its glow, then a click on the edge strip
+   brings the pane back. One 14s timeline shared by every part, so the
+   percentages below line up: 20-28 reach the divider, 28-42 drag, 42-48
+   close, 48-74 video only, 74-80 click the strip and reopen. The .tw-*
+   transitions are switched off here; the keyframes do the easing. */
+.glow-stage .tw-video,
+.glow-stage .tw-side {
+  transition: none;
+}
+
+.glow-stage .tw-video {
+  animation: glowVideo 14s var(--ease) infinite;
+}
+
+.glow-stage .tw-side {
+  animation: glowSide 14s var(--ease) infinite;
+}
+
+.glow-divider {
+  position: absolute;
+  top: 8%;
+  bottom: 8%;
+  left: 66.4%;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--line-strong);
+  opacity: 0;
+  animation: glowDivider 14s var(--ease) infinite;
+}
+
+.glow-strip {
+  position: absolute;
+  top: 50%;
+  right: 0.6%;
+  width: 3px;
+  height: 22%;
+  border-radius: 2px;
+  background: var(--line-strong);
+  transform: translateY(-50%);
+  opacity: 0;
+  animation: glowStrip 14s ease infinite;
+}
+
+.glow-cursor {
+  position: absolute;
+  z-index: 5;
+  left: 78%;
+  top: 112%;
+  width: 16px;
+  height: 16px;
+  opacity: 0;
+  pointer-events: none;
+  animation: glowCursor 14s var(--ease) infinite;
+}
+
+.glow-cursor svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+@keyframes glowVideo {
+  0%,
+  42% {
+    left: 1.5%;
+    width: 64%;
+  }
+  48%,
+  76% {
+    left: 5%;
+    width: 90%;
+  }
+  82%,
+  100% {
+    left: 1.5%;
+    width: 64%;
+  }
+}
+
+@keyframes glowSide {
+  0%,
+  28% {
+    opacity: 1;
+    transform: none;
+  }
+  42% {
+    opacity: 0.3;
+    transform: translateX(6%);
+  }
+  48%,
+  76% {
+    opacity: 0;
+    transform: translateX(40%);
+  }
+  82%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes glowDivider {
+  0%,
+  22% {
+    left: 66.4%;
+    opacity: 0;
+  }
+  28% {
+    left: 66.4%;
+    opacity: 1;
+  }
+  42% {
+    left: 97.5%;
+    opacity: 1;
+  }
+  46%,
+  100% {
+    left: 97.5%;
+    opacity: 0;
+  }
+}
+
+@keyframes glowStrip {
+  0%,
+  46% {
+    opacity: 0;
+  }
+  50%,
+  75% {
+    opacity: 1;
+  }
+  78%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes glowCursor {
+  0%,
+  18% {
+    left: 78%;
+    top: 112%;
+    opacity: 0;
+  }
+  21% {
+    left: 76%;
+    top: 90%;
+    opacity: 1;
+  }
+  28% {
+    left: 66.4%;
+    top: 50%;
+    opacity: 1;
+  }
+  42%,
+  46% {
+    left: 97.5%;
+    top: 50%;
+    opacity: 1;
+  }
+  54% {
+    left: 84%;
+    top: 66%;
+    opacity: 1;
+  }
+  68% {
+    left: 84%;
+    top: 66%;
+    opacity: 1;
+  }
+  74%,
+  78% {
+    left: 98.6%;
+    top: 50%;
+    opacity: 1;
+  }
+  86%,
+  100% {
+    left: 88%;
+    top: 112%;
+    opacity: 0;
+  }
+}
+
+/* Phones: the other demo's phone rules stack the video above the panes
+   inside .tw-window, so the frame gets the same taller shape and the
+   drag-to-the-edge loop (a sideways move) is left out. */
+@media (max-width: 640px) {
+  .glow-stage {
+    aspect-ratio: 3 / 4;
+  }
+
+  .glow-stage .tw-video,
+  .glow-stage .tw-side {
     animation: none;
+  }
+
+  .glow-divider,
+  .glow-strip,
+  .glow-cursor {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glow-stage .tw-scene,
+  .glow-stage .tw-ambient,
+  .glow-stage .tw-video,
+  .glow-stage .tw-side {
+    animation: none;
+  }
+
+  .glow-divider,
+  .glow-strip,
+  .glow-cursor {
+    display: none;
   }
 }
 
