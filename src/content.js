@@ -2221,7 +2221,13 @@
       pendingRelevant = false;
     }
 
-    if (!isWatchPage()) return;
+    // Not a watch page: make sure nothing of ours is left behind. Returning
+    // without this left the layout "on" over the next page whenever
+    // yt-navigate-start hadn't torn it down first (the miniplayer).
+    if (!isWatchPage()) {
+      teardownLayout();
+      return;
+    }
 
     // Master switch (toolbar panel): off means YouTube is left untouched.
     if (!settings.splitEnabled) {
@@ -2526,6 +2532,26 @@
     teardownLayout();
   });
   document.addEventListener("yt-navigate-finish", onNavigateFinish);
+
+  // Watchdog. Not every way of leaving or returning to a video fires the
+  // events above (the miniplayer, "i", is one), and start() disconnects the
+  // observer, so nothing else would notice. Twice a second: if the layout
+  // is on but this is no longer a watch page with the video in it, tear it
+  // down; when a watch page with its video comes back, build it again.
+  // Rebuilding happens only on that change, so a page that start() rightly
+  // leaves alone (theater mode, small window) isn't retried forever.
+  let watchdogWasWatching = false;
+  setInterval(() => {
+    const watching = isWatchPage() && !isMiniplayerActive();
+    const active = document.documentElement.classList.contains("yt-split-active");
+    if (!watching && active) {
+      if (observer) observer.disconnect();
+      teardownLayout();
+    } else if (watching && !watchdogWasWatching && !active) {
+      start();
+    }
+    watchdogWasWatching = watching;
+  }, 500);
 
   // Back/forward-button navigation doesn't always fire YouTube's own
   // yt-navigate-* events the same way a link click does — defensively
