@@ -784,9 +784,11 @@ html.yt-split-active #below #above-the-fold #title * {
    no fixed heights or clipping. Spacing/wrapping/sizing only; display is
    left alone (see the Subscribe note below). */
 html.yt-split-active #below #top-row {
+  display: flex !important;
+  flex-direction: row !important;
   flex-wrap: wrap !important;
   align-items: center !important;
-  justify-content: space-between !important;
+  justify-content: flex-start !important;
   gap: 8px !important;
   margin: 12px 0 0 !important;
   height: auto !important;
@@ -829,6 +831,50 @@ html.yt-split-active #below #actions ytd-menu-renderer > :not(:has(*)),
 html.yt-split-active #below #actions #top-level-buttons-computed > :not(:has(*)),
 html.yt-split-active #below #actions #flexible-item-buttons > :not(:has(*)) {
   display: none !important;
+}
+
+/* v1.5.3, from a screenshot: the gap rules above were not enough. The
+   second row of buttons sat right under the first with no gap and was
+   indented, because the buttons are nested several wrappers deep and the
+   wrapping happened inside a wrapper, not in #top-row. So the wrappers
+   are flattened (display: contents, they have no box of their own any
+   more) and every unit (channel, Subscribe / bell, like and dislike,
+   Share, ...) becomes a direct item of #top-row: one flex row that wraps,
+   left-aligned, with the same 8px gap across and between rows. This is a
+   deliberate display change on plain layout wrappers only; the
+   Subscribe button itself is still left alone (see its note below).
+   YouTube may move buttons that "don't fit" into the "..." menu, since
+   its menu can no longer measure its own width. */
+html.yt-split-active #below #top-row #owner,
+html.yt-split-active #below #top-row #actions,
+html.yt-split-active #below #top-row #actions-inner,
+html.yt-split-active #below #top-row #actions #menu,
+html.yt-split-active #below #top-row #actions ytd-menu-renderer,
+html.yt-split-active #below #top-row #actions #top-level-buttons-computed,
+html.yt-split-active #below #top-row #actions #flexible-item-buttons {
+  display: contents !important;
+}
+
+html.yt-split-active #below #top-row #actions ytd-menu-renderer > * {
+  flex: 0 0 auto !important;
+}
+
+/* Description card and the cards YouTube puts beside it (the "Live chat
+   replay" teaser, for one): in the narrow pane they shared one line,
+   touching and out of line with each other. Each now takes the full
+   width, stacked with the pane's 12px rhythm. */
+html.yt-split-active #below #bottom-row,
+html.yt-split-active #below #middle-row {
+  flex-wrap: wrap !important;
+  align-items: stretch !important;
+  gap: 12px !important;
+}
+
+html.yt-split-active #below #bottom-row > *,
+html.yt-split-active #below #middle-row > * {
+  flex: 1 1 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
 }
 
 /* One vertical rhythm for the description pane: 12px between the title,
