@@ -2806,4 +2806,40 @@ img {
   .morph-caption {
     font-size: 12px;
   }
+
+  /* Page layout on phones (not the mockups). */
+  .container {
+    padding: 0 20px;
+  }
+
+  .nav nav {
+    gap: 20px;
+  }
+
+  .nav-link-optional {
+    display: none;
+  }
+
+  .hero {
+    padding-top: 64px;
+    padding-bottom: 64px;
+  }
+
+  .hero-text {
+    margin-bottom: 48px;
+  }
+
+  .subtitle {
+    font-size: 17px;
+  }
+
+  .section {
+    padding-top: 72px;
+    padding-bottom: 72px;
+  }
+
+  .footer-inner {
+    flex-direction: column;
+    text-align: center;
+  }
 }
