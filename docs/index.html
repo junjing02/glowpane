@@ -36,14 +36,14 @@
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
   }
   </script>
-  <link rel="icon" href="icon.png?v=35" />
+  <link rel="icon" href="icon.png?v=36" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&display=swap" />
   <!-- ?v= busts GitHub Pages' 10-minute browser cache (max-age=600) so new HTML never
        loads with a stale stylesheet/script. Bump it whenever style.css or script.js changes. -->
-  <script src="theme.js?v=35"></script>
-  <link rel="stylesheet" href="style.css?v=35" />
+  <script src="theme.js?v=36"></script>
+  <link rel="stylesheet" href="style.css?v=36" />
 </head>
 <body>
   <!-- Decorative page backdrop (style.css "Page backdrop"). -->
@@ -56,7 +56,7 @@
   <header class="nav">
     <div class="container nav-inner">
       <a class="brand" href="#top">
-        <img src="icon.png?v=35" alt="" width="24" height="24" />
+        <img src="icon.png?v=36" alt="" width="24" height="24" />
         <span>Glowpane</span>
       </a>
       <nav aria-label="Primary">
@@ -74,7 +74,8 @@
         <h1>Read the comments without losing the video.</h1>
         <p class="subtitle">
           Glowpane puts the video on the left and everything else on the right.
-          Scroll the comments, browse what's next, and the video never leaves the screen.
+          Scroll the comments, browse what's next, and the video never leaves the screen,
+          with a soft glow of its own colors around it.
         </p>
         <div class="cta-row">
           <a href="#install" class="btn btn-primary">Install for free</a>
@@ -192,6 +193,24 @@
       </div>
     </section>
 
+    <section id="glow" class="container section">
+      <div class="glow-grid">
+        <div>
+          <h2 class="section-title">Light that follows the video.</h2>
+          <p class="section-lead">Glowpane takes the colors on screen and spreads them softly behind the page, so the video feels bigger than its frame.</p>
+          <ul class="glow-points">
+            <li><strong>Dark and light theme.</strong> YouTube's own Ambient mode only works in dark theme.</li>
+            <li><strong>As strong as you like.</strong> A slider for each theme, from a hint to a full glow.</li>
+            <li><strong>Easy to switch off.</strong> One switch in the settings, and in dark theme it also follows the player's Ambient mode.</li>
+          </ul>
+        </div>
+        <div class="glow-stage" aria-hidden="true">
+          <div class="glow-aura"></div>
+          <div class="glow-video"><div class="glow-scene"></div></div>
+        </div>
+      </div>
+    </section>
+
     <section id="features" class="container section">
       <h2 class="section-title">Everything beside the video, nothing in front of it.</h2>
 
@@ -237,7 +256,7 @@
         <div class="morph-label" aria-live="polite"><span class="morph-caption tw-caption">One window: the normal split</span></div>
         <div class="tw-stage" aria-hidden="true">
           <div class="tw-window tw-main">
-            <div class="compare-dots tw-bar"><span></span><span></span><span></span><div class="mock-url"></div><img class="tw-ext-icon" src="icon.png?v=35" alt="" width="16" height="16" /></div>
+            <div class="compare-dots tw-bar"><span></span><span></span><span></span><div class="mock-url"></div><img class="tw-ext-icon" src="icon.png?v=36" alt="" width="16" height="16" /></div>
             <div class="tw-main-body">
               <div class="tw-ambient tw-ambient-a"></div>
               <div class="tw-ambient tw-ambient-b"></div>
@@ -280,7 +299,7 @@
               </div>
             </div>
             <div class="tw-panel">
-              <div class="tw-panel-head"><img class="tw-panel-icon" src="icon.png?v=35" alt="" width="14" height="14" /><span>Glowpane</span></div>
+              <div class="tw-panel-head"><img class="tw-panel-icon" src="icon.png?v=36" alt="" width="14" height="14" /><span>Glowpane</span></div>
               <div class="tw-panel-row"><span>Two windows</span><i class="tw-switch"></i></div>
             </div>
           </div>
@@ -370,7 +389,7 @@
 
         <div class="panel-mock" aria-hidden="true">
           <div class="pm-header">
-            <img src="icon.png?v=35" alt="" width="22" height="22" />
+            <img src="icon.png?v=36" alt="" width="22" height="22" />
             <span class="pm-name">Glowpane</span>
             <i class="pm-switch is-on"></i>
           </div>
@@ -505,6 +524,6 @@
     </div>
   </footer>
 
-  <script src="script.js?v=35"></script>
+  <script src="script.js?v=36"></script>
 </body>
 </html>

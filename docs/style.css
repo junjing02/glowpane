@@ -1,12 +1,12 @@
 /* Design direction: a quiet, monochrome page (graphite ink on near-white,
    or the inverse in dark mode) where the ONLY color is the live demo: a
-   cinematic teal-and-orange video, plus (dark mode only, like the
+   video in the icon's light (amber, pink, violet), plus (dark mode only, like the
    extension's ambient light) its glow and the light it spills onto the page. One bold element, everything else disciplined.
    Light by default; dark by system setting or the nav's toggle (theme.js).
 
    Palette: paper #FAFAFA, ink #111316, slate #5D636D, line (ink at low
-   alpha); dark: #0A0A0B, #F3F3F4, #9B9CA3. Demo only: orange #FB923C,
-   teal #14B8A6, deep teal #0E7490. */
+   alpha); dark: #0A0A0B, #F3F3F4, #9B9CA3. Demo only, matching the icon:
+   amber #FFB868, pink #FF6096, violet #7C68FF. */
 :root {
   color-scheme: light;
   --bg: #fafafa;
@@ -162,7 +162,7 @@ img {
    - Grain: fine film-like noise, both themes.
    - Rules: hairlines at the content edges and at the "split" (~68% across,
      like the video/side-pane divide), both themes, fading in below the nav.
-   - Ambient: two faint, heavily blurred teal/orange glows drifting slowly,
+   - Ambient: two faint, heavily blurred amber/pink glows drifting slowly,
      echoing the ambient-light feature. Dark mode only.
    - Beam (on .hero): a soft projector cone falling onto the hero mockup.
      Dark mode only. */
@@ -177,8 +177,8 @@ img {
 .fx-ambient {
   position: absolute;
   inset: -20%;
-  background: radial-gradient(38% 34% at 22% 30%, rgba(251, 146, 60, 1), transparent 70%),
-    radial-gradient(40% 36% at 80% 72%, rgba(20, 184, 166, 1), transparent 70%);
+  background: radial-gradient(38% 34% at 22% 30%, rgba(255, 184, 104, 1), transparent 70%),
+    radial-gradient(40% 36% at 80% 72%, rgba(255, 96, 150, 1), transparent 70%);
   filter: blur(90px);
   opacity: var(--ambient-bg);
   animation: fxDrift 40s ease-in-out infinite alternate;
@@ -475,9 +475,9 @@ img {
   bottom: -2%;
   pointer-events: none;
   border-radius: 40px;
-  background: radial-gradient(50% 60% at 30% 45%, rgba(251, 146, 60, 0.85), transparent 70%),
-    radial-gradient(45% 55% at 56% 75%, rgba(20, 184, 166, 0.7), transparent 70%),
-    radial-gradient(50% 60% at 82% 40%, rgba(14, 116, 144, 0.55), transparent 70%);
+  background: radial-gradient(50% 60% at 30% 45%, rgba(255, 184, 104, 0.85), transparent 70%),
+    radial-gradient(45% 55% at 56% 75%, rgba(255, 96, 150, 0.7), transparent 70%),
+    radial-gradient(50% 60% at 82% 40%, rgba(124, 104, 255, 0.55), transparent 70%);
   filter: blur(72px);
   opacity: var(--spill-hint);
   transition: opacity 1s ease;
@@ -606,7 +606,7 @@ img {
 /* Ambient light: a soft glow in the mock video's own colors behind the
    whole window, fading in once the layout splits (the extension's glow
    follows YouTube's Ambient mode; this just shows the look). Same
-   gradient colors (teal and orange) and sceneDrift animation (same duration, started
+   gradient colors (amber, pink, violet) and sceneDrift animation (same duration, started
    together) as .mock-scene, so the glow drifts in step with the video.
    First child of .morph-body with z-index auto, so it paints under the
    video and panes by tree order; inset -12% keeps the blurred edges
@@ -617,9 +617,9 @@ img {
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.8s ease;
-  background: radial-gradient(ellipse 42% 52% at 30% 45%, rgba(251, 146, 60, 0.85), transparent 70%),
-    radial-gradient(ellipse 38% 48% at 50% 70%, rgba(20, 184, 166, 0.7), transparent 70%),
-    radial-gradient(ellipse 55% 60% at 80% 40%, rgba(14, 116, 144, 0.45), transparent 70%);
+  background: radial-gradient(ellipse 42% 52% at 30% 45%, rgba(255, 184, 104, 0.85), transparent 70%),
+    radial-gradient(ellipse 38% 48% at 50% 70%, rgba(255, 96, 150, 0.7), transparent 70%),
+    radial-gradient(ellipse 55% 60% at 80% 40%, rgba(124, 104, 255, 0.45), transparent 70%);
   background-size: 140% 140%;
   filter: blur(48px);
   animation: sceneDrift 14s ease-in-out infinite alternate;
@@ -726,9 +726,9 @@ img {
 .mock-scene {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 60% 70% at 30% 35%, rgba(251, 146, 60, 0.6), transparent 70%),
-    radial-gradient(ellipse 50% 60% at 78% 70%, rgba(20, 184, 166, 0.5), transparent 70%),
-    linear-gradient(160deg, #0b2530, #0a0f14 70%);
+  background: radial-gradient(ellipse 60% 70% at 30% 35%, rgba(255, 184, 104, 0.6), transparent 70%),
+    radial-gradient(ellipse 50% 60% at 78% 70%, rgba(255, 96, 150, 0.5), transparent 70%),
+    linear-gradient(160deg, #1d1430, #0b0a12 70%);
   background-size: 140% 140%;
   animation: sceneDrift 14s ease-in-out infinite alternate;
 }
@@ -1320,6 +1320,92 @@ img {
   font-size: 17px;
 }
 
+/* Glow: the one section about the ambient light itself. A small "video"
+   on a stage with its own colors blurred wide behind it, the same idea as
+   the extension (and the icon). The only color outside the demos. */
+.glow-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 72px;
+  align-items: center;
+}
+
+.glow-points {
+  list-style: none;
+  margin: 40px 0 0;
+  padding: 0;
+}
+
+.glow-points li {
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  color: var(--text-dim);
+  font-size: 15px;
+}
+
+.glow-points strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.glow-stage {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 24px;
+  background: var(--mock-bg);
+  box-shadow: var(--shadow-window);
+}
+
+.glow-aura {
+  position: absolute;
+  z-index: -1;
+  inset: -10%;
+  background: radial-gradient(ellipse 42% 52% at 30% 40%, rgba(255, 184, 104, 0.9), transparent 70%),
+    radial-gradient(ellipse 40% 50% at 55% 72%, rgba(255, 96, 150, 0.8), transparent 70%),
+    radial-gradient(ellipse 50% 58% at 80% 38%, rgba(124, 104, 255, 0.7), transparent 70%);
+  background-size: 140% 140%;
+  filter: blur(56px);
+  opacity: var(--mock-glow);
+  animation: sceneDrift 14s ease-in-out infinite alternate;
+}
+
+.glow-video {
+  position: relative;
+  width: 62%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 24px 48px -20px rgba(0, 0, 0, 0.5);
+}
+
+.glow-scene {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 70% at 30% 35%, rgba(255, 184, 104, 0.6), transparent 70%),
+    radial-gradient(ellipse 50% 60% at 78% 70%, rgba(255, 96, 150, 0.5), transparent 70%),
+    linear-gradient(160deg, #1d1430, #0b0a12 70%);
+  background-size: 140% 140%;
+  animation: sceneDrift 14s ease-in-out infinite alternate;
+}
+
+@media (max-width: 860px) {
+  .glow-grid {
+    grid-template-columns: 1fr;
+    gap: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glow-aura,
+  .glow-scene {
+    animation: none;
+  }
+}
+
 /* Features: plain columns (six, as 3 x 2), each opened by a hairline rule (the rule
    separates items; no boxes, shadows or hover effects). Color stays out
    of here on purpose: the demo above is the only colorful thing. */
@@ -1390,8 +1476,8 @@ img {
   bottom: -4%;
   pointer-events: none;
   border-radius: 40px;
-  background: radial-gradient(50% 60% at 35% 50%, rgba(251, 146, 60, 0.9), transparent 70%),
-    radial-gradient(45% 55% at 65% 70%, rgba(20, 184, 166, 0.8), transparent 70%);
+  background: radial-gradient(50% 60% at 35% 50%, rgba(255, 184, 104, 0.9), transparent 70%),
+    radial-gradient(45% 55% at 65% 70%, rgba(255, 96, 150, 0.8), transparent 70%);
   filter: blur(72px);
   opacity: calc(var(--spill) * 1.15);
 }
@@ -1557,17 +1643,17 @@ img {
 }
 
 .tw-ambient-a {
-  background: radial-gradient(ellipse 42% 52% at 32% 50%, rgba(251, 146, 60, 0.85), transparent 70%),
-    radial-gradient(ellipse 38% 48% at 60% 70%, rgba(20, 184, 166, 0.7), transparent 70%),
-    radial-gradient(ellipse 55% 60% at 80% 40%, rgba(14, 116, 144, 0.45), transparent 70%);
+  background: radial-gradient(ellipse 42% 52% at 32% 50%, rgba(255, 184, 104, 0.85), transparent 70%),
+    radial-gradient(ellipse 38% 48% at 60% 70%, rgba(255, 96, 150, 0.7), transparent 70%),
+    radial-gradient(ellipse 55% 60% at 80% 40%, rgba(124, 104, 255, 0.45), transparent 70%);
   background-size: 140% 140%;
   opacity: var(--mock-glow);
 }
 
 .tw-ambient-b {
-  background: radial-gradient(ellipse 45% 55% at 62% 45%, rgba(20, 184, 166, 0.85), transparent 70%),
-    radial-gradient(ellipse 40% 50% at 30% 70%, rgba(251, 146, 60, 0.55), transparent 70%),
-    radial-gradient(ellipse 55% 60% at 80% 30%, rgba(14, 116, 144, 0.5), transparent 70%);
+  background: radial-gradient(ellipse 45% 55% at 62% 45%, rgba(124, 104, 255, 0.85), transparent 70%),
+    radial-gradient(ellipse 40% 50% at 30% 70%, rgba(255, 184, 104, 0.55), transparent 70%),
+    radial-gradient(ellipse 55% 60% at 80% 30%, rgba(255, 96, 150, 0.5), transparent 70%);
   background-size: 140% 140%;
   opacity: 0;
 }
@@ -1640,7 +1726,7 @@ img {
   transform: translateX(14%);
 }
 
-/* Two "videos": A (the hero's teal-and-orange scene) and B (cooler, the
+/* Two "videos": A (the hero's amber-and-pink scene) and B (cooler, the
    one the cursor picks), cross-faded on switch. */
 .tw-scene {
   position: absolute;
@@ -1650,16 +1736,16 @@ img {
 }
 
 .tw-scene-a {
-  background: radial-gradient(ellipse 60% 70% at 30% 35%, rgba(251, 146, 60, 0.6), transparent 70%),
-    radial-gradient(ellipse 50% 60% at 78% 70%, rgba(20, 184, 166, 0.5), transparent 70%),
-    linear-gradient(160deg, #0b2530, #0a0f14 70%);
+  background: radial-gradient(ellipse 60% 70% at 30% 35%, rgba(255, 184, 104, 0.6), transparent 70%),
+    radial-gradient(ellipse 50% 60% at 78% 70%, rgba(255, 96, 150, 0.5), transparent 70%),
+    linear-gradient(160deg, #1d1430, #0b0a12 70%);
   background-size: 140% 140%;
 }
 
 .tw-scene-b {
-  background: radial-gradient(ellipse 55% 65% at 65% 40%, rgba(20, 184, 166, 0.65), transparent 70%),
-    radial-gradient(ellipse 45% 55% at 25% 72%, rgba(251, 146, 60, 0.4), transparent 70%),
-    linear-gradient(200deg, #062a2a, #0a0f14 70%);
+  background: radial-gradient(ellipse 55% 65% at 65% 40%, rgba(124, 104, 255, 0.65), transparent 70%),
+    radial-gradient(ellipse 45% 55% at 25% 72%, rgba(255, 184, 104, 0.4), transparent 70%),
+    linear-gradient(200deg, #141a38, #0b0a12 70%);
   background-size: 140% 140%;
   opacity: 0;
 }
