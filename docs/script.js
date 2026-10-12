@@ -58,7 +58,7 @@ if (morphDemo) {
 
   if (reduceMotion) {
     morphDemo.classList.add("is-after");
-    if (caption) caption.textContent = "With Split for YouTube";
+    if (caption) caption.textContent = "With Glowpane";
   } else if ("IntersectionObserver" in window) {
     const STATES = [
       "is-scrolled",
@@ -70,7 +70,7 @@ if (morphDemo) {
       "cursor-collapsed",
       "cursor-press",
     ];
-    const SPLIT = "With Split for YouTube";
+    const SPLIT = "With Glowpane";
     const SCROLL = "Scroll freely — the video stays put";
     const DRAG = "Drag the divider to resize";
     const COLLAPSE = "Collapse what you don't need";

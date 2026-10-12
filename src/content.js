@@ -1049,7 +1049,7 @@
         const newParentWidth = parent.getBoundingClientRect().width;
         if (newWidth > 0 && newParentWidth > 0 && newWidth < newParentWidth - 1) {
           console.warn(
-            "[Split for YouTube] spanFullWidth: overrides applied but element is still narrower than its parent",
+            "[Glowpane] spanFullWidth: overrides applied but element is still narrower than its parent",
             el,
             { newWidth, newParentWidth }
           );
@@ -1058,7 +1058,7 @@
       el = parent;
     }
     if (!anyChecked) {
-      console.warn("[Split for YouTube] spanFullWidth: #columns has no ancestors before document.documentElement?", columns);
+      console.warn("[Glowpane] spanFullWidth: #columns has no ancestors before document.documentElement?", columns);
     }
   }
 
@@ -1202,7 +1202,7 @@
     document.documentElement.classList.toggle(AMBIENT_ON_CLASS, on);
     // Only on an actual change (rare), so a wrong on/off state can be
     // diagnosed from the console instead of guessed at.
-    console.debug(`[Split for YouTube] ambient light ${on ? "on" : "off"} (from ${source})`);
+    console.debug(`[Glowpane] ambient light ${on ? "on" : "off"} (from ${source})`);
   }
 
   function ensureAmbient(columns) {
@@ -1488,7 +1488,7 @@
     card.setAttribute("role", "status");
     const title = document.createElement("div");
     title.className = "yt-split-welcome-title";
-    title.textContent = whatsNew ? "New in Split for YouTube" : "Split for YouTube is on";
+    title.textContent = whatsNew ? "New in Glowpane" : "Glowpane is on";
     const list = document.createElement("ul");
     const tips = whatsNew
       ? WHATS_NEW.tips
@@ -2442,7 +2442,7 @@
       reclampTopHeight();
       setupVideoEndedHandling();
     } catch (err) {
-      console.error("[Split for YouTube] initial layout pass failed, will retry:", err);
+      console.error("[Glowpane] initial layout pass failed, will retry:", err);
     }
 
     const root = document.querySelector("ytd-watch-flexy") || document.body;
@@ -2507,7 +2507,7 @@
       if (document.documentElement.classList.contains("yt-split-active")) return;
       if (attempt > MAX_RETRY_ATTEMPTS) {
         console.warn(
-          "[Split for YouTube] layout still hasn't activated after ~20s on",
+          "[Glowpane] layout still hasn't activated after ~20s on",
           location.href,
           "— giving up until the next navigation."
         );
@@ -2522,7 +2522,7 @@
           reclampTopHeight();
           setupVideoEndedHandling();
         } catch (err) {
-          console.error("[Split for YouTube] retry layout pass failed:", err);
+          console.error("[Glowpane] retry layout pass failed:", err);
         }
         retryUntilActive(attempt + 1);
       }, RETRY_INTERVAL_MS);

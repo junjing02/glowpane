@@ -1,7 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Split for YouTube",
-  "version": "1.6.1",
+  "name": "Glowpane: Comments Beside the Video for YouTube",
+  "short_name": "Glowpane",
+  "version": "1.7.0",
   "description": "Read YouTube comments without losing the video: a resizable side-by-side layout with ambient light and a synced two-window mode.",
   "minimum_chrome_version": "111",
   "icons": {
@@ -20,7 +21,7 @@
   },
   "action": {
     "default_popup": "src/popup.html",
-    "default_title": "Split for YouTube",
+    "default_title": "Glowpane",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",

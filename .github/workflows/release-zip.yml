@@ -44,7 +44,7 @@ jobs:
             gh release upload "$TAG" split-for-youtube.zip split-for-youtube-store.zip --clobber
           else
             gh release create "$TAG" split-for-youtube.zip split-for-youtube-store.zip \
-              --title "Split for YouTube $VERSION" \
+              --title "Glowpane $VERSION" \
               --notes "Unzip, then in chrome://extensions turn on Developer mode, click Load unpacked and choose the split-for-youtube folder." \
               --latest
           fi

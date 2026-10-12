@@ -1,10 +1,12 @@
 <p align="center">
-  <img src="icons/icon128.png" width="88" height="88" alt="Split for YouTube icon" />
+  <img src="icons/icon128.png" width="88" height="88" alt="Glowpane icon" />
 </p>
 
-<h1 align="center">Split for YouTube</h1>
+<h1 align="center">Glowpane</h1>
 
-<p align="center"><strong>Read the comments without losing the video.</strong></p>
+<p align="center"><strong>Read YouTube comments beside the video.</strong></p>
+
+<p align="center"><sub>Formerly Split for YouTube.</sub></p>
 
 <p align="center">
   <a href="https://github.com/junjing02/split-for-youtube/releases/latest"><img src="https://img.shields.io/github/v/release/junjing02/split-for-youtube?label=version&color=111316" alt="Latest version" /></a>
@@ -18,7 +20,7 @@
 </p>
 
 <p align="center">
-  <a href="https://junjing02.github.io/split-for-youtube/demo.mp4"><img src="docs/demo.webp" alt="Demo: YouTube's comments push the video off-screen; Split for YouTube keeps the video on the left with the comments beside it, adds ambient light, and can move the comments to a second window." width="100%" /></a>
+  <a href="https://junjing02.github.io/split-for-youtube/demo.mp4"><img src="docs/demo.webp" alt="Demo: YouTube's comments push the video off-screen; Glowpane keeps the video on the left with the comments beside it, adds ambient light, and can move the comments to a second window." width="100%" /></a>
   <br />
   <sub><a href="https://junjing02.github.io/split-for-youtube/demo.mp4">▶ Watch the demo in full quality</a></sub>
 </p>

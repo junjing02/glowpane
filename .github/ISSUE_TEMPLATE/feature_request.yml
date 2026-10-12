@@ -1,5 +1,5 @@
 name: Feature idea
-description: Suggest something that would make Split for YouTube better.
+description: Suggest something that would make Glowpane better.
 labels: ["enhancement"]
 body:
   - type: textarea
