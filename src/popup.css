@@ -226,21 +226,35 @@ output {
   font-variant-numeric: tabular-nums;
 }
 
+/* Two lines, so nothing wraps: the links, then the version and Reset. */
 footer {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 4px;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
   padding-top: 10px;
   border-top: 1px solid var(--border);
   color: var(--text-dim);
   font-size: 12px;
+  white-space: nowrap;
 }
 
-.links {
+.links,
+.meta {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
+}
+
+.meta {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+#version {
+  font-variant-numeric: tabular-nums;
+  cursor: default;
 }
 
 footer a {
