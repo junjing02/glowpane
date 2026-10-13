@@ -392,7 +392,7 @@
   // exactly right.
   function enforceMinVideoHeight() {
     const container = document.querySelector("#player-container-outer");
-    const columns = document.querySelector("#columns");
+    const columns = watchRoot().querySelector("#columns");
     if (!container || !columns) return;
     const containerHeight = container.getBoundingClientRect().height;
     if (containerHeight <= 0 || containerHeight >= MIN_VIDEO_HEIGHT) return;
@@ -436,9 +436,9 @@
   // shrinking" — checking #primary alone never saw it. The limit is the
   // divider's own left edge (the gap), not the side pane's.
   function preventColumnOverlap() {
-    const primary = document.querySelector("#primary");
+    const primary = watchRoot().querySelector("#primary");
     const sidePane = document.getElementById("yt-split-side-pane");
-    const columns = document.querySelector("#columns");
+    const columns = watchRoot().querySelector("#columns");
     if (!primary || !sidePane || !columns) return;
     const primaryRect = primary.getBoundingClientRect();
     const sideRect = sidePane.getBoundingClientRect();
@@ -1317,7 +1317,7 @@
     const frameMs = reducedMotion.matches ? AMBIENT_CALM_FRAME_MS : AMBIENT_FRAME_MS;
     if (!ambient.on || now - ambient.lastDraw < frameMs - 2) return;
 
-    const video = document.querySelector("#primary video");
+    const video = watchRoot().querySelector("#primary video, #movie_player video");
     const player = document.querySelector("#player-container-outer");
     if (!video || !player || video.readyState < 2) return;
     const rect = player.getBoundingClientRect();
@@ -1489,7 +1489,7 @@
   // when there is one (a drag this session, or a remembered layout), else
   // the automatic default.
   function applyPreferredSideWidth() {
-    const columns = document.querySelector("#columns");
+    const columns = watchRoot().querySelector("#columns");
     const rect = hasManualSideWidth && columns ? columns.getBoundingClientRect() : null;
     if (!rect || rect.width <= 0) {
       applySideWidth();
@@ -1731,7 +1731,7 @@
 
   function updateWideSide() {
     const sidePane = document.getElementById("yt-split-side-pane");
-    const columns = document.querySelector("#columns");
+    const columns = watchRoot().querySelector("#columns");
     const commentsPane = document.getElementById("yt-split-comments-pane");
     let wide = false;
     const root = document.documentElement;
@@ -2215,7 +2215,7 @@
   // could plausibly fire against that momentary, incorrect size rather
   // than strictly following our synchronous set→measure→restore order.
   function measureVideoAspectRatio() {
-    const video = document.querySelector("#primary video");
+    const video = watchRoot().querySelector("#primary video, #movie_player video");
     if (video && video.videoWidth > 0 && video.videoHeight > 0) {
       return video.videoWidth / video.videoHeight;
     }
@@ -2247,8 +2247,8 @@
   // grid row), so this isn't circular with constrainVideoSize()'s own
   // width cap.
   function applySideWidth() {
-    const columns = document.querySelector("#columns");
-    const primaryInner = document.querySelector("#primary-inner");
+    const columns = watchRoot().querySelector("#columns");
+    const primaryInner = watchRoot().querySelector("#primary-inner");
     if (!columns || !primaryInner) {
       setSideWidth(DEFAULT_SIDE_WIDTH);
       return;
@@ -2344,7 +2344,7 @@
     document.documentElement.style.setProperty(VIDEO_RATIO_VAR, String(ratio));
     document.documentElement.style.setProperty(VIDEO_MIN_WIDTH_VAR, minVideoWidthFor(ratio) + "px");
 
-    const primaryInner = document.querySelector("#primary-inner");
+    const primaryInner = watchRoot().querySelector("#primary-inner");
     if (!primaryInner) return;
     const availableHeight = primaryInner.getBoundingClientRect().height;
     if (availableHeight <= 0) return;
@@ -2421,7 +2421,7 @@
       commentsPane.classList.add("yt-split-pane-collapsed");
       commentsCollapsed = true;
     }
-    const columns = document.querySelector("#columns");
+    const columns = watchRoot().querySelector("#columns");
     if (!columns) return;
     const rect = columns.getBoundingClientRect();
     // A plain 50/50 split, not maximized toward the video's minimum. This
@@ -2530,7 +2530,7 @@
   const RATE_KEY = "ytSplitRestorePlaybackRate";
 
   function savePlaybackRate() {
-    const video = document.querySelector("#primary video, #movie_player video");
+    const video = watchRoot().querySelector("#primary video, #movie_player video");
     if (!video || video.playbackRate === 1) return;
     try {
       sessionStorage.setItem(RATE_KEY, String(video.playbackRate));
@@ -2567,7 +2567,7 @@
   }
 
   function setupVideoEndedHandling() {
-    const video = document.querySelector("#primary video");
+    const video = watchRoot().querySelector("#primary video, #movie_player video");
     if (!video || video.dataset.ytSplitEndedBound === "1") return;
     video.dataset.ytSplitEndedBound = "1";
     restorePlaybackRate(video);
@@ -2978,6 +2978,11 @@
     } else if (watching && !watchdogWasWatching && !active) {
       start();
     } else if (watching && active) {
+      // The player's <video> can appear after the layout is already on, at
+      // which point nothing else would bind its "ended" listener (reported:
+      // the pane sometimes didn't widen when a video ended). A no-op once
+      // bound.
+      setupVideoEndedHandling();
       checkLayoutHealth();
     }
     watchdogWasWatching = watching;
@@ -3039,7 +3044,7 @@
   // sound or competes with the main window. (Not muted: YouTube saves the
   // mute state as a preference, which would leak into the main window.)
   function silenceCompanionVideo() {
-    const video = document.querySelector("#primary video, #movie_player video");
+    const video = watchRoot().querySelector("#primary video, #movie_player video");
     if (!video) return;
     if (!video.paused) video.pause();
     if (video.dataset.ytSplitSilenced === "1") return;
@@ -3059,7 +3064,7 @@
   }
 
   function seekMainVideo(seconds) {
-    const video = document.querySelector("#primary video, #movie_player video");
+    const video = watchRoot().querySelector("#primary video, #movie_player video");
     if (!video) return;
     video.currentTime = seconds;
     video.play().catch(() => {});
@@ -3281,7 +3286,7 @@
           // manualSideWidthRatio (captured at drag-end — see
           // onDocumentMouseUp()) keeps both columns changing together,
           // proportionally.
-          const columns = document.querySelector("#columns");
+          const columns = watchRoot().querySelector("#columns");
           if (columns) {
             const columnsRect = columns.getBoundingClientRect();
             setSideWidth(clampSideWidth(manualSideWidthRatio * columnsRect.width, columnsRect));
