@@ -72,6 +72,10 @@
   // one column at a fixed pixel size while the other absorbs the entire
   // size change.
   let manualSideWidthRatio = 0.5;
+  // "min" / "max" when the user left the divider at one of its stops, so a
+  // window resize keeps it at that stop instead of scaling it away from it
+  // (reported: a pane dragged to its smallest grew when the window did).
+  let manualSidePin = null;
 
   // Whether the description pane is expanded for the CURRENT video only —
   // deliberately NOT persisted. Used to default to localStorage, but that
@@ -582,6 +586,8 @@
       return;
     }
     const columnsWidth = dragState.rect.width;
+    const dragRect = dragState.rect;
+    const dragRatio = dragState.ratio;
     dragState = null;
     lastDragEndAt = Date.now();
     document.body.classList.remove("yt-split-resizing");
@@ -606,6 +612,7 @@
     if (Number.isFinite(current) && columnsWidth > 0) {
       manualSideWidthRatio = current / columnsWidth;
     }
+    manualSidePin = sidePinFor(current, dragRect, dragRatio);
     hasManualSideWidth = true;
     // Dragging while the pane is widened after a video ended makes the
     // width the user's own again.
@@ -645,6 +652,7 @@
       preventColumnOverlap();
       hasManualSideWidth = true;
       if (rect.width > 0) manualSideWidthRatio = px / rect.width;
+      manualSidePin = sidePinFor(px, rect);
       inRecsFocusMode = false;
       preFocusLayout = null;
       saveLayout();
@@ -1472,6 +1480,7 @@
     if (inRecsFocusMode) return;
     savedLayout = {
       sideRatio: hasManualSideWidth ? manualSideWidthRatio : null,
+      sidePin: hasManualSideWidth ? manualSidePin : null,
       topHeight: currentTopHeightPx(),
       wideWidth: parseFloat(document.documentElement.style.getPropertyValue(WIDE_WIDTH_VAR)) || null,
       secondaryCollapsed,
@@ -1495,9 +1504,25 @@
       applySideWidth();
       return;
     }
-    setSideWidth(clampSideWidth(manualSideWidthRatio * rect.width, rect));
+    setSideWidth(manualSideWidthFor(rect));
     enforceMinVideoHeight();
     preventColumnOverlap();
+  }
+
+  // Which stop, if any, a manually set width is resting on.
+  function sidePinFor(px, rect, ratio) {
+    if (!Number.isFinite(px) || !rect || rect.width <= 0) return null;
+    if (px <= MIN_SIDE_WIDTH + 1) return "min";
+    if (px >= clampSideWidth(rect.width, rect, ratio) - 1) return "max";
+    return null;
+  }
+
+  // The user's own width for the current window: the stop they left the
+  // divider at, else their proportion of the layout.
+  function manualSideWidthFor(rect) {
+    const wanted =
+      manualSidePin === "min" ? MIN_SIDE_WIDTH : manualSidePin === "max" ? rect.width : manualSideWidthRatio * rect.width;
+    return clampSideWidth(wanted, rect);
   }
 
   // ---- First-run hint ----
@@ -2400,6 +2425,7 @@
       preFocusLayout = {
         hasManualSideWidth,
         manualSideWidthRatio,
+        manualSidePin,
         secondaryCollapsed,
         commentsCollapsed,
       };
@@ -2485,6 +2511,7 @@
     if (before) {
       hasManualSideWidth = before.hasManualSideWidth;
       manualSideWidthRatio = before.manualSideWidthRatio;
+      manualSidePin = before.manualSidePin;
       // With "Remember my layout" the panes go back too, so the automatic
       // collapse of Comments can't end up in the remembered layout.
       if (settings.rememberLayout) {
@@ -2735,6 +2762,7 @@
       if (typeof savedLayout.sideRatio === "number") {
         hasManualSideWidth = true;
         manualSideWidthRatio = savedLayout.sideRatio;
+        manualSidePin = savedLayout.sidePin === "min" || savedLayout.sidePin === "max" ? savedLayout.sidePin : null;
       }
       if (typeof savedLayout.topHeight === "number") setTopHeight(savedLayout.topHeight);
       if (typeof savedLayout.wideWidth === "number") setWideWidth(savedLayout.wideWidth);
@@ -3289,7 +3317,7 @@
           const columns = watchRoot().querySelector("#columns");
           if (columns) {
             const columnsRect = columns.getBoundingClientRect();
-            setSideWidth(clampSideWidth(manualSideWidthRatio * columnsRect.width, columnsRect));
+            setSideWidth(manualSideWidthFor(columnsRect));
             enforceMinVideoHeight();
             preventColumnOverlap();
           } else {
