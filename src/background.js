@@ -249,10 +249,16 @@ chrome.windows.onBoundsChanged.addListener((win) =>
 );
 
 // Keyboard shortcuts (manifest "commands"; users can rebind them at
-// chrome://extensions/shortcuts). They only flip the stored settings; the
+// chrome://extensions/shortcuts). Two of them only flip the stored settings; the
 // tabs and the handlers above react to the storage change, exactly as if
 // the toolbar panel's switches had been used.
-chrome.commands.onCommand.addListener(async (command) => {
+chrome.commands.onCommand.addListener(async (command, tab) => {
+  // Video only is a per-tab view, not a stored setting: ask the tab in
+  // front to hide or show its side pane.
+  if (command === "toggle-video-only") {
+    if (tab && tab.id != null) chrome.tabs.sendMessage(tab.id, { type: "toggleVideoOnly" }).catch(() => {});
+    return;
+  }
   const stored = await chrome.storage.local.get({ splitEnabled: true, [MODE_KEY]: false });
   if (command === "toggle-split") {
     const splitEnabled = !stored.splitEnabled;

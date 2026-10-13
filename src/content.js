@@ -24,6 +24,7 @@
     showDescription: true,
     showRecommendations: true,
     showComments: true,
+    onePaneAtATime: false, // Recommended and Comments never open together
     sideWidth: "auto", // or a SIDE_WIDTH_PRESETS key
     paneTransparency: 40, // 0 = solid panes, 100 = fully see-through
     rememberLayout: false,
@@ -214,6 +215,7 @@
           container.classList.toggle("yt-split-pane-collapsed", collapsed);
           options.onToggle(collapsed);
           header.setAttribute("aria-expanded", String(!collapsed));
+          syncOnePane(container);
         };
         // Keyboard and screen-reader access: a focusable "button" that
         // Enter/Space toggle. A mouse click must NOT move focus onto it
@@ -242,6 +244,41 @@
     // redundant re-check on every layout pass is a harmless no-op once
     // in sync, and never fights a live click.
     if (options && options.collapsed) container.classList.add("yt-split-pane-collapsed");
+  }
+
+  // "One pane at a time" setting: Recommended and Comments are never open
+  // together, so the open one gets the whole stack. It reuses the normal
+  // collapse (class + in-memory flag); nothing else changes.
+  function setPaneCollapsed(pane, collapsed) {
+    pane.classList.toggle("yt-split-pane-collapsed", collapsed);
+    const header = pane.querySelector(":scope > .yt-split-pane-header");
+    if (header) header.setAttribute("aria-expanded", String(!collapsed));
+    if (pane.id === "yt-split-comments-pane") commentsCollapsed = collapsed;
+    else secondaryCollapsed = collapsed;
+  }
+
+  // changed: the pane whose title was just clicked (the other one takes
+  // the opposite state). Without it, e.g. from ensureLayout(): if both
+  // are open, Comments stays and Recommended closes; if both are closed,
+  // Comments opens. Skipped unless both panes are really showing (no
+  // comments on a live stream, or a pane hidden in the settings).
+  function syncOnePane(changed) {
+    if (!settings.onePaneAtATime) return;
+    const secondary = document.querySelector("#yt-split-side-pane > #secondary");
+    const commentsPane = document.getElementById("yt-split-comments-pane");
+    if (!secondary || !commentsPane) return;
+    if (getComputedStyle(secondary).display === "none" || getComputedStyle(commentsPane).display === "none") return;
+    const isCollapsed = (pane) => pane.classList.contains("yt-split-pane-collapsed");
+    if (changed === secondary || changed === commentsPane) {
+      const other = changed === secondary ? commentsPane : secondary;
+      if (isCollapsed(other) === isCollapsed(changed)) setPaneCollapsed(other, !isCollapsed(changed));
+    } else if (isCollapsed(secondary) === isCollapsed(commentsPane)) {
+      setPaneCollapsed(secondary, true);
+      setPaneCollapsed(commentsPane, false);
+    } else {
+      return;
+    }
+    saveLayout();
   }
 
   // Moves a node into newParent, remembering exactly where it came from so
@@ -1470,10 +1507,11 @@
   // not the manifest version, so small fixes don't nag. New installs get
   // the first-run hint only: dismissing it marks this note seen too.
   const WHATS_NEW = {
-    version: "1.8",
+    version: "1.9",
     tips: [
       "Ambient light now works in YouTube's light theme too, with its own strength.",
-      "Video only: drag the main divider to the window edge. Click the strip at that edge to bring the side pane back.",
+      "Video only: press Alt+Shift+V, or drag the main divider to the window edge. Click the strip at that edge to bring the side pane back.",
+      "One pane at a time: a new setting that gives Recommended or Comments the whole side pane.",
       "Hide the description, Recommended or Comments for good in the settings.",
       "Pick a default side pane width, and how see-through the panes are.",
       "Find these under the extension's toolbar icon.",
@@ -1872,6 +1910,7 @@
     spanFullWidth(columns);
     repairSubscribeButtons();
     applyHiddenPanes();
+    syncOnePane();
     observeSidePane(sidePane);
     updateWideSide();
     maybeShowWelcome();
@@ -2873,6 +2912,12 @@
       else if (msg.type === "savePlaybackRate") {
         savePlaybackRate();
         sendResponse(true);
+      } else if (msg.type === "toggleVideoOnly" && window.top === window) {
+        // Keyboard shortcut: the same view as dragging the divider to the
+        // edge. Only where the normal split is showing.
+        if (windowRole === "none" && document.documentElement.classList.contains("yt-split-active")) {
+          setSideClosed(!sideClosed);
+        }
       } else if (msg.type === "diagnose" && window.top === window) {
         let report;
         try {
@@ -2965,7 +3010,8 @@
       if (changes.ambientEnabled || changes.ambientStrength || changes.ambientStrengthLight) applyAmbientSettings();
       if (changes.paneTransparency) applyPaneTransparency();
       // Applied in place (no start()), so a dragged divider survives.
-      const paneChange = changes.showDescription || changes.showRecommendations || changes.showComments;
+      const paneChange =
+        changes.showDescription || changes.showRecommendations || changes.showComments || changes.onePaneAtATime;
       // Switching to or from video only changes the grid itself, so that
       // one does go through start(), to resize the video for its new column.
       const wasVideoOnly = windowRole === "none" && document.documentElement.classList.contains("yt-split-solo");

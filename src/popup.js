@@ -10,6 +10,7 @@ const DEFAULTS = {
   showDescription: true,
   showRecommendations: true,
   showComments: true,
+  onePaneAtATime: false,
   sideWidth: "auto",
   paneTransparency: 40,
   rememberLayout: false,
@@ -82,6 +83,17 @@ document.getElementById("version").textContent = "v" + chrome.runtime.getManifes
 document.getElementById("shortcuts").addEventListener("click", (e) => {
   e.preventDefault();
   chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
+});
+
+// Reset: everything back to its default, except the two switches that
+// turn whole modes on or off (resetting those would close a second window
+// or switch the extension back on behind the user's back).
+document.getElementById("reset").addEventListener("click", (e) => {
+  e.preventDefault();
+  const { splitEnabled, twoWindowMode, ...rest } = DEFAULTS;
+  for (const [key, value] of Object.entries(rest)) write(controls[key], value);
+  chrome.storage.local.set(rest);
+  reflect();
 });
 
 // Copy diagnostics (no visible control, to keep the panel simple): click

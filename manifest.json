@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Glowpane: Comments Beside the Video for YouTube",
   "short_name": "Glowpane",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "Read YouTube comments without losing the video: a resizable side-by-side layout with ambient light and a synced two-window mode.",
   "minimum_chrome_version": "111",
   "icons": {
@@ -40,6 +40,12 @@
         "default": "Alt+Shift+W"
       },
       "description": "Turn Two windows on or off"
+    },
+    "toggle-video-only": {
+      "suggested_key": {
+        "default": "Alt+Shift+V"
+      },
+      "description": "Hide or show the side pane (video only)"
     }
   },
   "content_scripts": [

@@ -68,6 +68,20 @@ h1 {
   cursor: default;
 }
 
+/* Group headings (Layout, Glow, Panes). */
+h2 {
+  margin: 12px 0 2px;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+h2 + .row {
+  padding-top: 6px;
+}
+
 .row {
   display: flex;
   align-items: flex-start;
@@ -150,7 +164,7 @@ input:focus-visible + .switch {
 }
 
 .slider-row .title {
-  flex: 0 0 118px;
+  flex: 0 0 96px;
   font-weight: 400;
   color: var(--text-dim);
 }
@@ -162,7 +176,7 @@ input:focus-visible + .switch {
 /* One-line rows (no description): tighter, vertically centered. */
 .row.compact {
   align-items: center;
-  padding: 9px 0;
+  padding: 7px 0;
 }
 
 .row.compact .title {
@@ -175,7 +189,7 @@ input:focus-visible + .switch {
 
 /* A one-line row holding a slider: label, slider, value. */
 .row.compact.range-row .title {
-  flex: 0 0 118px;
+  flex: 0 0 96px;
 }
 
 select {

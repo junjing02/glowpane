@@ -59,9 +59,9 @@ Click the extension's toolbar icon and switch on **Two windows**. The video fill
 
 ## Settings and shortcuts
 
-Click the extension's toolbar icon for the settings: the split itself, Two windows, ambient light and its strength in each theme, **Show description**, **Show recommendations**, **Show comments** (switch off all three and the video fills the window), **Side pane width**, **Pane transparency**, **Remember my layout**, and **Video on the right**.
+Click the extension's toolbar icon for the settings: the split itself, Two windows, ambient light and its strength in each theme, **Show description**, **Show recommendations**, **Show comments** (switch off all three and the video fills the window), **One pane at a time**, **Side pane width**, **Transparency**, **Remember my layout**, and **Video on the right**.
 
-- `Alt+Shift+S` turns the split on or off, and `Alt+Shift+W` toggles Two windows. Change them at `chrome://extensions/shortcuts`.
+- `Alt+Shift+S` turns the split on or off, `Alt+Shift+W` toggles Two windows, and `Alt+Shift+V` hides or shows the side pane (video only). Change them at `chrome://extensions/shortcuts`.
 - Double-click a divider to reset it. With a divider focused, the arrow keys move it.
 - For a quick video-only view, drag the main divider to the window edge. Click the strip at that edge to reopen the side pane. Your Show settings stay as they are.
 - Ambient light works in light and dark themes. In dark theme it also follows YouTube's own Ambient mode.
