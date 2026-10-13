@@ -607,6 +607,10 @@
       manualSideWidthRatio = current / columnsWidth;
     }
     hasManualSideWidth = true;
+    // Dragging while the pane is widened after a video ended makes the
+    // width the user's own again.
+    inRecsFocusMode = false;
+    preFocusLayout = null;
     saveLayout();
   }
 
@@ -641,6 +645,8 @@
       preventColumnOverlap();
       hasManualSideWidth = true;
       if (rect.width > 0) manualSideWidthRatio = px / rect.width;
+      inRecsFocusMode = false;
+      preFocusLayout = null;
       saveLayout();
     });
     // Double-click: back to the automatic default width.
@@ -1460,6 +1466,10 @@
 
   function saveLayout() {
     if (!settings.rememberLayout || windowRole !== "none") return;
+    // The video-ended widening is automatic and temporary; it must never
+    // be recorded as the user's layout (reported: the next video kept the
+    // widened pane with "Remember my layout" on).
+    if (inRecsFocusMode) return;
     savedLayout = {
       sideRatio: hasManualSideWidth ? manualSideWidthRatio : null,
       topHeight: currentTopHeightPx(),
@@ -2368,6 +2378,8 @@
   // state, which should persist through a resize just like it persists
   // through everything else until playback actually resumes.
   let inRecsFocusMode = false;
+  // The width choice and pane states from just before the video ended.
+  let preFocusLayout = null;
 
   // When the video finishes, there's nothing left to watch and it's a
   // natural point to shift focus to recommendations: expand it if
@@ -2382,6 +2394,16 @@
   // widen; whether to re-expand it is left to the user, or to the next
   // navigation's normal reset in start()).
   function enterRecsFocusMode() {
+    // Remember what the user had, so resuming playback puts it back. (This
+    // also runs again on a window resize while already widened.)
+    if (!inRecsFocusMode) {
+      preFocusLayout = {
+        hasManualSideWidth,
+        manualSideWidthRatio,
+        secondaryCollapsed,
+        commentsCollapsed,
+      };
+    }
     inRecsFocusMode = true;
     // This is an automatic widen, not the user's own choice — clearing it
     // means a resize while in this state goes through the inRecsFocusMode
@@ -2455,10 +2477,38 @@
     // manually dragged divider (reported).
     if (!inRecsFocusMode) return;
     inRecsFocusMode = false;
-    // Just let the normal ideal-video-size default recomputation take
-    // back over — no need to duplicate that logic here.
+    // Back to the width the user had before the video ended: their own
+    // proportion (a drag, or a remembered layout) if there was one, else
+    // the automatic default.
+    const before = preFocusLayout;
+    preFocusLayout = null;
+    if (before) {
+      hasManualSideWidth = before.hasManualSideWidth;
+      manualSideWidthRatio = before.manualSideWidthRatio;
+      // With "Remember my layout" the panes go back too, so the automatic
+      // collapse of Comments can't end up in the remembered layout.
+      if (settings.rememberLayout) {
+        const secondary = document.querySelector("#yt-split-side-pane > #secondary");
+        const commentsPane = document.getElementById("yt-split-comments-pane");
+        if (secondary) setPaneCollapsed(secondary, before.secondaryCollapsed);
+        if (commentsPane) setPaneCollapsed(commentsPane, before.commentsCollapsed);
+      }
+    }
     constrainVideoSize();
-    applySideWidth();
+    applyPreferredSideWidth();
+  }
+
+  // "ended" also fires for things that aren't the end of the video the
+  // user watched: an ad finishing in the same <video> element, or a stale
+  // event arriving just after YouTube switched to the next video. Widening
+  // on those left the new video with the widened pane.
+  function onVideoEnded(e) {
+    const video = e.target;
+    if (!video || !video.ended) return;
+    if (Date.now() - lastStartAt < 1500) return;
+    const player = document.getElementById("movie_player");
+    if (player && (player.classList.contains("ad-showing") || player.classList.contains("ad-interrupting"))) return;
+    enterRecsFocusMode();
   }
 
   // The <video> element is a fresh one every navigation (new video, or a
@@ -2521,7 +2571,7 @@
     if (!video || video.dataset.ytSplitEndedBound === "1") return;
     video.dataset.ytSplitEndedBound = "1";
     restorePlaybackRate(video);
-    video.addEventListener("ended", enterRecsFocusMode);
+    video.addEventListener("ended", onVideoEnded);
     video.addEventListener("play", exitRecsFocusMode);
     // If our early sizing calls ran before the video's own intrinsic
     // dimensions were available (measureVideoAspectRatio then had to use
@@ -2668,6 +2718,7 @@
     // recs-focus-mode width behavior instead of the normal video-maximizing
     // default it should actually get.
     inRecsFocusMode = false;
+    preFocusLayout = null;
     // Description pane: always start collapsed, same "every new
     // navigation" reset as the state above — see descExpanded's own
     // comment for why this is no longer persisted via localStorage.
