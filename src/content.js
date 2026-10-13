@@ -2820,6 +2820,9 @@
   }
 
   function setRole(role) {
+    // Not the second window after all: let go of early.js's hold on the
+    // player (it hides and pauses it from the first moment of the load).
+    if (role !== "companion") document.documentElement.classList.remove("yt-split-early-companion");
     if (role === windowRole) return;
     windowRole = role;
     if (isWatchPage()) start();

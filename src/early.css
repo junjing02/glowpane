@@ -1,0 +1,12 @@
+/* Second window (two-window mode), from the first moment of the page load:
+   early.js sets this class at document_start so the player never flashes
+   before content.css's own companion rules take over at document_idle. */
+html.yt-split-early-companion #full-bleed-container,
+html.yt-split-early-companion #player-full-bleed-container,
+html.yt-split-early-companion #player-theater-container,
+html.yt-split-early-companion #player-wide-container,
+html.yt-split-early-companion #player-container-outer,
+html.yt-split-early-companion #player-container,
+html.yt-split-early-companion ytd-watch-flexy #player {
+  display: none !important;
+}
