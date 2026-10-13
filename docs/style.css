@@ -633,16 +633,16 @@ img {
    outside the window. */
 .mock-ambient {
   position: absolute;
-  inset: -12%;
+  inset: -20%;
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.8s ease;
   background: radial-gradient(ellipse 42% 52% at 30% 45%, rgba(255, 184, 104, 0.85), transparent 70%),
     radial-gradient(ellipse 38% 48% at 50% 70%, rgba(255, 96, 150, 0.7), transparent 70%),
     radial-gradient(ellipse 55% 60% at 80% 40%, rgba(124, 104, 255, 0.45), transparent 70%);
-  background-size: 140% 140%;
+  background-size: 100% 100%;
   filter: blur(48px);
-  animation: sceneDrift 14s ease-in-out infinite alternate;
+  animation: ambientDrift 14s ease-in-out infinite alternate;
 }
 
 .morph-demo.is-after .mock-ambient {
@@ -745,20 +745,37 @@ img {
 
 .mock-scene {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 140%;
+  height: 140%;
   background: radial-gradient(ellipse 60% 70% at 30% 35%, rgba(255, 184, 104, 0.6), transparent 70%),
     radial-gradient(ellipse 50% 60% at 78% 70%, rgba(255, 96, 150, 0.5), transparent 70%),
     linear-gradient(160deg, #1d1430, #0b0a12 70%);
-  background-size: 140% 140%;
+  background-size: 100% 100%;
   animation: sceneDrift 14s ease-in-out infinite alternate;
 }
 
+/* The drift moves the layer itself (transform), not its background: a
+   background-position animation repaints the gradient, and re-blurs the
+   glow layers, on every frame, which stuttered on phones (reported). The
+   scene is 140% of the video and slides by the spare 40%; the glow reaches
+   20% past the window on each side and slides by half of that. */
 @keyframes sceneDrift {
   from {
-    background-position: 0% 0%;
+    transform: translate3d(0, 0, 0);
   }
   to {
-    background-position: 100% 100%;
+    transform: translate3d(-28.5714%, -28.5714%, 0);
+  }
+}
+
+@keyframes ambientDrift {
+  from {
+    transform: translate3d(7.14%, 7.14%, 0);
+  }
+  to {
+    transform: translate3d(-7.14%, -7.14%, 0);
   }
 }
 
@@ -782,17 +799,19 @@ img {
 .mock-progress span {
   display: block;
   height: 100%;
-  width: 18%;
+  width: 82%;
   background: #ff0033;
+  transform-origin: 0 50%;
   animation: mockPlay 40s linear infinite;
 }
 
+/* From 18% to 82% of the bar, as a transform (no layout per frame). */
 @keyframes mockPlay {
   from {
-    width: 18%;
+    transform: scaleX(0.2195);
   }
   to {
-    width: 82%;
+    transform: scaleX(1);
   }
 }
 
@@ -1312,6 +1331,10 @@ img {
     animation: none;
   }
 
+  .mock-progress span {
+    width: 18%;
+  }
+
   .morph-scroll-list {
     scroll-behavior: auto;
   }
@@ -1398,14 +1421,14 @@ img {
 .glow-stage .tw-ambient {
   --glow-on: min(1, calc(var(--mock-glow) * 1.2));
   opacity: 0;
-  background-size: 140% 140%;
-  animation: sceneDrift 5s ease-in-out infinite alternate, glowFade 9s linear infinite;
+  background-size: 100% 100%;
+  animation: ambientDrift 5s ease-in-out infinite alternate, glowFade 9s linear infinite;
 }
 
 .glow-stage .tw-scene {
   --glow-on: 1;
   opacity: 0;
-  background-size: 140% 140%;
+  background-size: 100% 100%;
   transition: none;
   animation: sceneDrift 5s ease-in-out infinite alternate, glowFade 9s linear infinite;
 }
@@ -1483,18 +1506,20 @@ img {
 /* A soft band of light crossing the video now and then. */
 .glow-sweep {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 300%;
+  height: 100%;
   background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.14) 50%, transparent 65%);
-  background-size: 300% 100%;
   animation: glowSweep 4.5s ease-in-out infinite;
 }
 
 @keyframes glowSweep {
   from {
-    background-position: 100% 0;
+    transform: translate3d(-66.6667%, 0, 0);
   }
   to {
-    background-position: 0% 0;
+    transform: translate3d(0, 0, 0);
   }
 }
 
@@ -2071,18 +2096,18 @@ img {
 .tw-ambient {
   position: absolute;
   z-index: -1;
-  inset: -12%;
+  inset: -20%;
   pointer-events: none;
   filter: blur(48px);
   transition: opacity 0.6s ease;
-  animation: sceneDrift 14s ease-in-out infinite alternate;
+  animation: ambientDrift 14s ease-in-out infinite alternate;
 }
 
 .tw-ambient-a {
   background: radial-gradient(ellipse 42% 52% at 32% 50%, rgba(255, 184, 104, 0.85), transparent 70%),
     radial-gradient(ellipse 38% 48% at 60% 70%, rgba(255, 96, 150, 0.7), transparent 70%),
     radial-gradient(ellipse 55% 60% at 80% 40%, rgba(124, 104, 255, 0.45), transparent 70%);
-  background-size: 140% 140%;
+  background-size: 100% 100%;
   opacity: var(--mock-glow);
 }
 
@@ -2090,7 +2115,7 @@ img {
   background: radial-gradient(ellipse 45% 55% at 62% 45%, rgba(124, 104, 255, 0.85), transparent 70%),
     radial-gradient(ellipse 40% 50% at 30% 70%, rgba(255, 184, 104, 0.55), transparent 70%),
     radial-gradient(ellipse 55% 60% at 80% 30%, rgba(255, 96, 150, 0.5), transparent 70%);
-  background-size: 140% 140%;
+  background-size: 100% 100%;
   opacity: 0;
 }
 
@@ -2166,7 +2191,10 @@ img {
    one the cursor picks), cross-faded on switch. */
 .tw-scene {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 140%;
+  height: 140%;
   transition: opacity 0.6s ease;
   animation: sceneDrift 14s ease-in-out infinite alternate;
 }
@@ -2175,14 +2203,14 @@ img {
   background: radial-gradient(ellipse 60% 70% at 30% 35%, rgba(255, 184, 104, 0.6), transparent 70%),
     radial-gradient(ellipse 50% 60% at 78% 70%, rgba(255, 96, 150, 0.5), transparent 70%),
     linear-gradient(160deg, #1d1430, #0b0a12 70%);
-  background-size: 140% 140%;
+  background-size: 100% 100%;
 }
 
 .tw-scene-b {
   background: radial-gradient(ellipse 55% 65% at 65% 40%, rgba(124, 104, 255, 0.65), transparent 70%),
     radial-gradient(ellipse 45% 55% at 25% 72%, rgba(255, 184, 104, 0.4), transparent 70%),
     linear-gradient(200deg, #141a38, #0b0a12 70%);
-  background-size: 140% 140%;
+  background-size: 100% 100%;
   opacity: 0;
 }
 
@@ -2892,6 +2920,16 @@ img {
     padding-top: 88px;
     padding-bottom: 88px;
   }
+}
+
+/* Mockup loops stop while their mockup is off screen (script.js sets the
+   class), so a phone only animates what is in view. */
+.is-offscreen,
+.is-offscreen *,
+.is-offscreen::before,
+.is-offscreen *::before,
+.is-offscreen *::after {
+  animation-play-state: paused !important;
 }
 
 /* Phones: every mockup keeps its landscape, desktop-sized window, because

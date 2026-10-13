@@ -29,6 +29,18 @@ if (nav) {
   window.addEventListener("resize", fit);
 })();
 
+// The mockups' CSS loops run only while the mockup is on (or near) the
+// screen; off screen they only cost frames, which showed on phones.
+if ("IntersectionObserver" in window) {
+  const mockObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => entry.target.classList.toggle("is-offscreen", !entry.isIntersecting));
+    },
+    { rootMargin: "120px" }
+  );
+  document.querySelectorAll(".morph-demo, .tw-demo, .glow-stage").forEach((el) => mockObserver.observe(el));
+}
+
 // Copy buttons (chrome://extensions can't be opened from a link). Hidden
 // in the HTML and only revealed where the Clipboard API is available.
 if (navigator.clipboard && window.isSecureContext) {
