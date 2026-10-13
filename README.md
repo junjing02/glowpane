@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <a href="https://junjing02.github.io/glowpane/demo.mp4"><img src="docs/demo.webp" alt="Demo: YouTube's comments push the video off-screen; Glowpane keeps the video on the left with the comments beside it, adds ambient light, and can move the comments to a second window." width="100%" /></a>
+  <a href="https://junjing02.github.io/glowpane/demo.mp4"><img src="docs/demo.webp" alt="Demo: YouTube's comments push the video off-screen; Glowpane keeps the video on the left with the comments beside it, resizes by dragging, hides the side pane when dragged to the edge, adds ambient light, and can move the comments to a second window." width="100%" /></a>
   <br />
   <sub><a href="https://junjing02.github.io/glowpane/demo.mp4">▶ Watch the demo in full quality</a></sub>
 </p>
