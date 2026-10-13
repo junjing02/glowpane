@@ -1452,6 +1452,71 @@ html.yt-split-active.yt-split-wide-side
   cursor: pointer;
 }
 
+/* Fail-safe note (content.js "Fail-safe"). Shown after the layout has been
+   torn down, so it can't use the --split-* tokens (they only exist while
+   the split is on): its colors are spelled out for both themes. */
+#yt-split-failsafe {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 2100;
+  width: 300px;
+  padding: 16px 18px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  background: #212121;
+  color: #f1f1f1;
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.5);
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+html:not([dark]) #yt-split-failsafe {
+  border-color: rgba(0, 0, 0, 0.15);
+  background: #ffffff;
+  color: #0f0f0f;
+}
+
+#yt-split-failsafe .yt-split-failsafe-title {
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+#yt-split-failsafe p {
+  margin: 0 0 12px;
+  opacity: 0.75;
+}
+
+#yt-split-failsafe .yt-split-failsafe-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+#yt-split-failsafe button {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 999px;
+  background: #f1f1f1;
+  color: #0f0f0f;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+html:not([dark]) #yt-split-failsafe button {
+  background: #0f0f0f;
+  color: #ffffff;
+}
+
+#yt-split-failsafe a {
+  color: inherit;
+  opacity: 0.75;
+  text-decoration: underline;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html.yt-split-active #yt-split-side-pane,
   html.yt-split-active #secondary > *,

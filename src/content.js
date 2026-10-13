@@ -1560,6 +1560,126 @@
     document.body.appendChild(card);
   }
 
+  // ---- Fail-safe ----
+  // YouTube changes its page without notice. If the layout is on but the
+  // result is plainly broken (the player or the side pane has no size or
+  // sits outside the window), step aside: tear down and leave YouTube's
+  // own layout for this video, with a small note. A broken-looking YouTube
+  // is far worse than the extension doing nothing. Deliberately
+  // conservative, since a false alarm switches the split off: it needs
+  // several bad checks in a row, waits out the page load, and skips every
+  // state where sizes are legitimately unusual.
+  const FAILSAFE_NOTE_ID = "yt-split-failsafe";
+  const FAILSAFE_GRACE_MS = 8000; // after start(): the page is still settling
+  const FAILSAFE_STREAK = 6; // checks in a row (the watchdog runs every 500ms)
+  let failSafePage = null; // the video the layout stepped aside for
+  let failSafeReason = null;
+  let failSafeNoteShown = false; // once per tab, so it never nags
+  let unhealthyStreak = 0;
+  let lastStartAt = 0;
+
+  function pageKey() {
+    return new URLSearchParams(location.search).get("v") || location.pathname + location.search;
+  }
+
+  function isFailSafeActive() {
+    return failSafePage !== null && failSafePage === pageKey();
+  }
+
+  // A short reason when the layout is broken, else null.
+  function layoutProblem() {
+    const inView = (el, min) => {
+      const r = el.getBoundingClientRect();
+      return r.width >= min && r.height >= min && r.right > 0 && r.bottom > 0 && r.left < window.innerWidth && r.top < window.innerHeight;
+    };
+    const html = document.documentElement;
+    if (windowRole !== "companion") {
+      // No player at all (an unavailable video) is not ours to judge.
+      const player = watchRoot().querySelector("#movie_player");
+      if (player && !inView(player, 50)) return "player not visible";
+    }
+    if (!html.classList.contains("yt-split-solo")) {
+      const sidePane = document.getElementById("yt-split-side-pane");
+      if (!sidePane) return "side pane missing";
+      if (!inView(sidePane, 100)) return "side pane not visible";
+    }
+    return null;
+  }
+
+  function checkLayoutHealth() {
+    const html = document.documentElement;
+    const settled =
+      Date.now() - lastStartAt > FAILSAFE_GRACE_MS &&
+      !document.hidden &&
+      !document.fullscreenElement &&
+      !dragState &&
+      !vDragState &&
+      !html.classList.contains("yt-split-closing") &&
+      meetsActivationThresholdOrRole();
+    if (!settled) {
+      unhealthyStreak = 0;
+      return;
+    }
+    let reason = null;
+    try {
+      reason = layoutProblem();
+    } catch (err) {
+      reason = null; // never let the check itself break the page
+    }
+    if (!reason) {
+      unhealthyStreak = 0;
+      return;
+    }
+    if (++unhealthyStreak < FAILSAFE_STREAK) return;
+    unhealthyStreak = 0;
+    failSafePage = pageKey();
+    failSafeReason = reason;
+    console.warn("[Glowpane] the layout looked broken (" + reason + "); showing YouTube's own layout for this video.");
+    if (observer) observer.disconnect();
+    teardownLayout();
+    showFailSafeNote();
+  }
+
+  // Both two-window roles ignore the window-size threshold.
+  function meetsActivationThresholdOrRole() {
+    return windowRole !== "none" || meetsActivationThreshold();
+  }
+
+  function hideFailSafeNote() {
+    const note = document.getElementById(FAILSAFE_NOTE_ID);
+    if (note) note.remove();
+  }
+
+  function showFailSafeNote() {
+    if (failSafeNoteShown || document.getElementById(FAILSAFE_NOTE_ID)) return;
+    failSafeNoteShown = true;
+    const note = document.createElement("div");
+    note.id = FAILSAFE_NOTE_ID;
+    note.setAttribute("role", "status");
+    const title = document.createElement("div");
+    title.className = "yt-split-failsafe-title";
+    title.textContent = "Glowpane stepped aside";
+    const text = document.createElement("p");
+    text.textContent =
+      "It couldn't arrange this page properly, so YouTube is showing as normal. YouTube may have changed something.";
+    const actions = document.createElement("div");
+    actions.className = "yt-split-failsafe-actions";
+    const report = document.createElement("a");
+    report.href = "https://github.com/junjing02/glowpane/issues/new/choose";
+    report.target = "_blank";
+    report.rel = "noopener";
+    report.textContent = "Report a problem";
+    const dismiss = document.createElement("button");
+    dismiss.type = "button";
+    dismiss.textContent = "Dismiss";
+    // No focus on click, so the next spacebar press still reaches the player.
+    dismiss.addEventListener("mousedown", (e) => e.preventDefault());
+    dismiss.addEventListener("click", hideFailSafeNote);
+    actions.append(dismiss, report);
+    note.append(title, text, actions);
+    document.body.appendChild(note);
+  }
+
   // ---- Wide side pane ----
   // When the side pane is half the layout or wider (a vertical video's
   // 50/50 default, a divider dragged that far, or a wide two-window
@@ -1720,6 +1840,7 @@
       `page: ${location.pathname} window: ${window.innerWidth}x${window.innerHeight} dark: ${html.hasAttribute("dark")}`,
       "html classes: " + Array.from(html.classList).filter((c) => c.startsWith("yt-")).join(" "),
       "role: " + windowRole + " settings: " + JSON.stringify(settings),
+      "fail-safe: " + (failSafeReason ? failSafeReason + (isFailSafeActive() ? " (stepped aside on this video)" : " (earlier video)") : "not triggered"),
       "",
       "== Subscribe elements ==",
     ];
@@ -1776,6 +1897,12 @@
     }
 
     if (!settings.splitEnabled) {
+      teardownLayout();
+      return;
+    }
+
+    // The fail-safe stepped aside for this video (see "Fail-safe").
+    if (isFailSafeActive()) {
       teardownLayout();
       return;
     }
@@ -2474,6 +2601,16 @@
       return;
     }
 
+    // Fail-safe: a new video gets a fresh try; the one it stepped aside
+    // for stays as plain YouTube.
+    lastStartAt = Date.now();
+    unhealthyStreak = 0;
+    if (isFailSafeActive()) {
+      teardownLayout();
+      return;
+    }
+    hideFailSafeNote();
+
     // Theater mode and the split are mutually exclusive — see
     // isTheaterMode()'s comment. Tear down and stop here; the click/keydown
     // listeners near the bottom of the file re-trigger start() when the
@@ -2630,6 +2767,7 @@
     function retryUntilActive(attempt) {
       if (myGeneration !== navGeneration) return;
       if (!isWatchPage()) return;
+      if (isFailSafeActive()) return;
       if (document.documentElement.classList.contains("yt-split-active")) return;
       if (attempt > MAX_RETRY_ATTEMPTS) {
         console.warn(
@@ -2788,6 +2926,8 @@
       teardownLayout();
     } else if (watching && !watchdogWasWatching && !active) {
       start();
+    } else if (watching && active) {
+      checkLayoutHealth();
     }
     watchdogWasWatching = watching;
   }, 500);
