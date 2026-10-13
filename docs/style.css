@@ -1736,7 +1736,8 @@ img {
 
 /* Features: plain columns (six, as 3 x 2), each opened by a hairline rule (the rule
    separates items; no boxes, shadows or hover effects). Color stays out
-   of here on purpose: the demo above is the only colorful thing. */
+   of here on purpose: the demo above is the only colorful thing. Each
+   icon plays a small loop of its feature (the .fi-* rules below). */
 .feature-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1760,6 +1761,113 @@ img {
   width: 22px;
   height: 22px;
   display: block;
+}
+
+/* Icon loops: opacity and transform only, always running (no hover, so
+   they work on phones too). Lengths are in the icons' 24-unit viewBox. */
+.feature-icon svg {
+  overflow: visible;
+}
+
+.fi-scroll,
+.fi-resize,
+.fi-window {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* The video stays put: lines scroll up the side column, the left is still. */
+.fi-scroll {
+  animation: fiScroll 2.4s linear infinite;
+}
+
+.fi-scroll-b {
+  animation-delay: -1.2s;
+}
+
+@keyframes fiScroll {
+  0% { transform: translateY(4px); opacity: 0; }
+  25%, 75% { opacity: 1; }
+  100% { transform: translateY(-4px); opacity: 0; }
+}
+
+/* Resize anything: the divider slides left and right. */
+.fi-resize {
+  animation: fiResize 3.6s ease-in-out infinite;
+}
+
+@keyframes fiResize {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2.5px); }
+  75% { transform: translateX(2.5px); }
+}
+
+/* Ambient light: the rays around the video breathe. */
+.fi-rays {
+  animation: fiRays 3.2s ease-in-out infinite;
+}
+
+@keyframes fiRays {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+
+/* Two windows: the second window slides out of the first. */
+.fi-window {
+  animation: fiWindow 4.8s ease-in-out infinite;
+}
+
+@keyframes fiWindow {
+  0%, 12% { transform: translateX(-4px); opacity: 0; }
+  32%, 84% { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(-4px); opacity: 0; }
+}
+
+/* Adapts to the video: the normal split fades to the vertical-video one
+   (a narrow video, with the two panes side by side) and back. */
+.fi-layout-a {
+  animation: fiLayout 6s ease-in-out infinite;
+}
+
+.fi-layout-b {
+  animation: fiLayout 6s ease-in-out -3s infinite;
+}
+
+@keyframes fiLayout {
+  0%, 40% { opacity: 1; }
+  50%, 90% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* Live streams: the signal pulses outward, inner ring first. */
+.fi-wave {
+  animation: fiWave 2.4s ease-in-out infinite;
+}
+
+.fi-wave-b {
+  animation-delay: 0.4s;
+}
+
+@keyframes fiWave {
+  0%, 100% { opacity: 0.25; }
+  35% { opacity: 1; }
+  70% { opacity: 0.25; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fi-scroll,
+  .fi-resize,
+  .fi-rays,
+  .fi-window,
+  .fi-layout-a,
+  .fi-wave {
+    animation: none;
+  }
+
+  .fi-layout-b {
+    animation: none;
+    opacity: 0;
+  }
 }
 
 .feature h3 {
