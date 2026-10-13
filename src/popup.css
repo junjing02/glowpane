@@ -173,6 +173,11 @@ input:focus-visible + .switch {
   margin-top: 0;
 }
 
+/* A one-line row holding a slider: label, slider, value. */
+.row.compact.range-row .title {
+  flex: 0 0 118px;
+}
+
 select {
   flex: 0 0 auto;
   padding: 4px 6px;

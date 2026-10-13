@@ -34,8 +34,9 @@ html.yt-split-active {
      old solid --split-bg-raised color at 60% opacity, over whatever is
      behind (#columns is transparent, so the page background, or YouTube's
      ambient-mode glow when that's on). Started as a faint 6% tint; made
-     less see-through on request. Adjust the alpha to taste. */
-  --split-pane-bg: rgba(33, 33, 33, 0.6);
+     less see-through on request. The alpha comes from the "Pane
+     transparency" setting (content.js sets --split-pane-alpha). */
+  --split-pane-bg: rgba(33, 33, 33, var(--split-pane-alpha, 0.6));
   /* The single spacing value used for every edge and gap in the layout —
      see #columns' padding below. */
   --split-gap: clamp(4px, 0.5vw, 6px);
@@ -60,7 +61,7 @@ html.yt-split-active:not([dark]) {
   --split-border-strong: rgba(0, 0, 0, 0.2);
   --split-text-dim: #606060;
   --split-text: #0f0f0f;
-  --split-pane-bg: rgba(242, 242, 242, 0.6);
+  --split-pane-bg: rgba(242, 242, 242, var(--split-pane-alpha, 0.6));
   /* Ambient light in light theme (an addition over YouTube, which has no
      Ambient mode here): content.js turns the sampled colors into tints
      over white (tintSampleForLightTheme), which does the color work

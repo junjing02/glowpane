@@ -11,13 +11,15 @@ const DEFAULTS = {
   showRecommendations: true,
   showComments: true,
   sideWidth: "auto",
+  paneTransparency: 40,
   rememberLayout: false,
   videoOnRight: false,
 };
 
 const controls = Object.fromEntries(Object.keys(DEFAULTS).map((key) => [key, document.getElementById(key)]));
 const options = document.getElementById("options");
-const sliders = ["ambientStrength", "ambientStrengthLight"];
+const glowSliders = ["ambientStrength", "ambientStrengthLight"];
+const sliders = [...glowSliders, "paneTransparency"];
 
 // Switches hold booleans, sliders numbers, the dropdown its option's value.
 function read(el) {
@@ -42,7 +44,7 @@ function reflect() {
   for (const [key, el] of Object.entries(controls)) {
     if (key !== "splitEnabled") el.disabled = !on;
   }
-  for (const key of sliders) controls[key].disabled = !on || !controls.ambientEnabled.checked;
+  for (const key of glowSliders) controls[key].disabled = !on || !controls.ambientEnabled.checked;
 }
 
 chrome.storage.local.get(DEFAULTS).then((stored) => {

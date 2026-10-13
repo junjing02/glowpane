@@ -25,6 +25,7 @@
     showRecommendations: true,
     showComments: true,
     sideWidth: "auto", // or a SIDE_WIDTH_PRESETS key
+    paneTransparency: 40, // 0 = solid panes, 100 = fully see-through
     rememberLayout: false,
     videoOnRight: false,
   };
@@ -1469,12 +1470,12 @@
   // not the manifest version, so small fixes don't nag. New installs get
   // the first-run hint only: dismissing it marks this note seen too.
   const WHATS_NEW = {
-    version: "1.6",
+    version: "1.8",
     tips: [
       "Ambient light now works in YouTube's light theme too, with its own strength.",
       "Video only: drag the main divider to the window edge. Click the strip at that edge to bring the side pane back.",
       "Hide the description, Recommended or Comments for good in the settings.",
-      "Pick a default side pane width.",
+      "Pick a default side pane width, and how see-through the panes are.",
       "Find these under the extension's toolbar icon.",
     ],
   };
@@ -2925,6 +2926,14 @@
     if (ambient) ambient.lastCheck = 0; // re-evaluate on/off on the next frame
   }
 
+  // How see-through the side panes are: content.css reads the alpha in
+  // --split-pane-bg. Applied in place, like the ambient settings.
+  function applyPaneTransparency() {
+    const value = Number(settings.paneTransparency);
+    const transparency = Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : DEFAULT_SETTINGS.paneTransparency;
+    document.documentElement.style.setProperty("--split-pane-alpha", String(1 - transparency / 100));
+  }
+
   try {
     chrome.storage.local.get({ ...DEFAULT_SETTINGS, savedLayout: null, welcomeSeen: false, seenVersion: null }).then((stored) => {
       for (const key of Object.keys(DEFAULT_SETTINGS)) settings[key] = stored[key];
@@ -2933,6 +2942,7 @@
       seenVersion = stored.seenVersion;
       storageLoaded = true;
       applyAmbientSettings();
+      applyPaneTransparency();
       if (isWatchPage()) start();
     });
     chrome.storage.onChanged.addListener((changes, area) => {
@@ -2953,6 +2963,7 @@
         saveLayout();
       }
       if (changes.ambientEnabled || changes.ambientStrength || changes.ambientStrengthLight) applyAmbientSettings();
+      if (changes.paneTransparency) applyPaneTransparency();
       // Applied in place (no start()), so a dragged divider survives.
       const paneChange = changes.showDescription || changes.showRecommendations || changes.showComments;
       // Switching to or from video only changes the grid itself, so that
