@@ -323,6 +323,29 @@ img {
   color: var(--text);
 }
 
+/* Stays on screen with the sticky nav. On phones (no install there) the
+   plain Install link shows instead, which also keeps the nav short. */
+.nav nav a.nav-cta {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+}
+
+.nav nav a.nav-cta:hover {
+  background: var(--accent-hover);
+  color: var(--on-accent);
+}
+
+.nav-install {
+  display: none;
+}
+
 .nav-github {
   display: inline-flex;
   align-items: center;
@@ -3126,6 +3149,14 @@ img {
 
   .nav-link-optional {
     display: none;
+  }
+
+  .nav nav a.nav-cta {
+    display: none;
+  }
+
+  .nav-install {
+    display: inline;
   }
 
   .hero {
