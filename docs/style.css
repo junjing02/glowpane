@@ -2635,14 +2635,14 @@ img {
 .pm-slider::before {
   content: "";
   position: absolute;
-  inset: 0 30% 0 0;
+  inset: 0 calc(100% - var(--v, 70%)) 0 0;
   border-radius: 2px;
   background: var(--accent);
 }
 
 .pm-slider i {
   position: absolute;
-  left: 70%;
+  left: var(--v, 70%);
   top: 50%;
   width: 14px;
   height: 14px;
@@ -2687,20 +2687,51 @@ img {
   font-variant-numeric: tabular-nums;
 }
 
+/* Group headings, as in the real panel (Layout, Glow, Panes). */
+.pm-head {
+  margin: 12px 0 0;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pm-head + .pm-row {
+  padding-top: 6px;
+}
+
+/* A one-line row with a slider (Transparency). */
+.pm-row.pm-range-row {
+  gap: 12px;
+}
+
+.pm-range-row .pm-title {
+  flex: 0 0 auto;
+}
+
 .pm-footer {
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 4px;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
   padding-top: 10px;
   border-top: 1px solid var(--border);
   color: var(--text-dim);
   font-size: 12px;
 }
 
-.pm-links {
+.pm-links,
+.pm-meta {
   display: flex;
+  justify-content: space-between;
   gap: 12px;
+}
+
+.pm-meta {
+  justify-content: flex-end;
+  font-size: 11px;
+  opacity: 0.8;
 }
 
 @media (max-width: 860px) {

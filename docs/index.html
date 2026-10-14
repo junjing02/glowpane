@@ -49,14 +49,14 @@
     "embedUrl": "https://www.youtube-nocookie.com/embed/4ZZCkTg6xIo"
   }
   </script>
-  <link rel="icon" href="icon.png?v=48" />
+  <link rel="icon" href="icon.png?v=49" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&display=swap" />
   <!-- ?v= busts GitHub Pages' 10-minute browser cache (max-age=600) so new HTML never
        loads with a stale stylesheet/script. Bump it whenever style.css or script.js changes. -->
-  <script src="theme.js?v=48"></script>
-  <link rel="stylesheet" href="style.css?v=48" />
+  <script src="theme.js?v=49"></script>
+  <link rel="stylesheet" href="style.css?v=49" />
 </head>
 <body>
   <!-- Decorative page backdrop (style.css "Page backdrop"). -->
@@ -69,7 +69,7 @@
   <header class="nav">
     <div class="container nav-inner">
       <a class="brand" href="#top">
-        <img src="icon.png?v=48" alt="" width="24" height="24" />
+        <img src="icon.png?v=49" alt="" width="24" height="24" />
         <span>Glowpane</span>
       </a>
       <nav aria-label="Primary">
@@ -213,7 +213,7 @@
       <p class="section-lead">A quick tour, with sound.</p>
       <div class="video-frame">
         <a class="video-play" href="https://www.youtube.com/watch?v=4ZZCkTg6xIo" data-id="4ZZCkTg6xIo" aria-label="Play the Glowpane video (37 seconds)">
-          <img src="video-poster.jpg?v=48" alt="" width="1280" height="720" loading="lazy" decoding="async" />
+          <img src="video-poster.jpg?v=49" alt="" width="1280" height="720" loading="lazy" decoding="async" />
           <span class="video-play-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg></span>
         </a>
       </div>
@@ -235,7 +235,7 @@
           <div class="glow-spill glow-b"></div>
           <div class="glow-spill glow-c"></div>
           <div class="tw-window glow-window">
-            <div class="compare-dots tw-bar"><span></span><span></span><span></span><div class="mock-url"></div><img class="tw-ext-icon" src="icon.png?v=48" alt="" width="16" height="16" /></div>
+            <div class="compare-dots tw-bar"><span></span><span></span><span></span><div class="mock-url"></div><img class="tw-ext-icon" src="icon.png?v=49" alt="" width="16" height="16" /></div>
             <div class="tw-main-body">
               <div class="tw-ambient glow-a"></div>
               <div class="tw-ambient glow-b"></div>
@@ -333,7 +333,7 @@
         <div class="morph-label" aria-live="polite"><span class="morph-caption tw-caption">One window: the normal split</span></div>
         <div class="tw-stage" aria-hidden="true">
           <div class="tw-window tw-main">
-            <div class="compare-dots tw-bar"><span></span><span></span><span></span><div class="mock-url"></div><img class="tw-ext-icon" src="icon.png?v=48" alt="" width="16" height="16" /></div>
+            <div class="compare-dots tw-bar"><span></span><span></span><span></span><div class="mock-url"></div><img class="tw-ext-icon" src="icon.png?v=49" alt="" width="16" height="16" /></div>
             <div class="tw-main-body">
               <div class="tw-ambient tw-ambient-a"></div>
               <div class="tw-ambient tw-ambient-b"></div>
@@ -376,7 +376,7 @@
               </div>
             </div>
             <div class="tw-panel">
-              <div class="tw-panel-head"><img class="tw-panel-icon" src="icon.png?v=48" alt="" width="14" height="14" /><span>Glowpane</span></div>
+              <div class="tw-panel-head"><img class="tw-panel-icon" src="icon.png?v=49" alt="" width="14" height="14" /><span>Glowpane</span></div>
               <div class="tw-panel-row"><span>Two windows</span><i class="tw-switch"></i></div>
             </div>
           </div>
@@ -447,7 +447,7 @@
             </div>
             <div>
               <dt>Show only what you want</dt>
-              <dd>Hide the description, recommendations or comments, and pick the side pane's width and transparency.</dd>
+              <dd>Hide the description, recommendations or comments, keep one pane open at a time, and pick the side pane's width and transparency.</dd>
             </div>
             <div>
               <dt>Your layout</dt>
@@ -455,36 +455,51 @@
             </div>
             <div>
               <dt>Shortcuts</dt>
-              <dd><kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>S</kbd> for the split, <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>W</kbd> for Two windows.</dd>
+              <dd><kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>S</kbd> for the split, <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>W</kbd> for Two windows, <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>V</kbd> for just the video.</dd>
             </div>
           </dl>
         </div>
 
         <div class="panel-mock" aria-hidden="true">
           <div class="pm-header">
-            <img src="icon.png?v=48" alt="" width="22" height="22" />
+            <img src="icon.png?v=49" alt="" width="22" height="22" />
             <span class="pm-name">Glowpane</span>
             <i class="pm-switch is-on"></i>
           </div>
           <div class="pm-body">
+            <div class="pm-head">Layout</div>
             <div class="pm-row">
               <span class="pm-text"><span class="pm-title">Two windows</span><span class="pm-desc">Keep the video here and open everything else in a second window.</span></span>
               <i class="pm-switch"></i>
             </div>
-            <div class="pm-row">
-              <span class="pm-text"><span class="pm-title">Ambient light</span><span class="pm-desc">Glow the video's colors behind the page.</span></span>
+            <div class="pm-row pm-compact">
+              <span class="pm-title">Side pane width</span>
+              <span class="pm-select">Fit the video</span>
+            </div>
+            <div class="pm-row pm-compact">
+              <span class="pm-title">Video on the right</span>
+              <i class="pm-switch"></i>
+            </div>
+            <div class="pm-row pm-compact">
+              <span class="pm-title">Remember my layout</span>
+              <i class="pm-switch is-on"></i>
+            </div>
+            <div class="pm-head">Glow</div>
+            <div class="pm-row pm-compact">
+              <span class="pm-title">Ambient light</span>
               <i class="pm-switch is-on"></i>
             </div>
             <div class="pm-row pm-slider-row">
-              <span class="pm-slider-label">Glow in dark theme</span>
+              <span class="pm-slider-label">In dark theme</span>
               <span class="pm-slider"><i></i></span>
               <span class="pm-slider-value">70%</span>
             </div>
             <div class="pm-row pm-slider-row">
-              <span class="pm-slider-label">Glow in light theme</span>
+              <span class="pm-slider-label">In light theme</span>
               <span class="pm-slider"><i></i></span>
               <span class="pm-slider-value">70%</span>
             </div>
+            <div class="pm-head">Panes</div>
             <div class="pm-row pm-compact">
               <span class="pm-title">Show description</span>
               <i class="pm-switch is-on"></i>
@@ -498,19 +513,19 @@
               <i class="pm-switch is-on"></i>
             </div>
             <div class="pm-row pm-compact">
-              <span class="pm-title">Side pane width</span>
-              <span class="pm-select">Fit the video</span>
-            </div>
-            <div class="pm-row">
-              <span class="pm-text"><span class="pm-title">Remember my layout</span><span class="pm-desc">Keep pane sizes from one video to the next.</span></span>
-              <i class="pm-switch is-on"></i>
-            </div>
-            <div class="pm-row">
-              <span class="pm-text"><span class="pm-title">Video on the right</span><span class="pm-desc">Swap sides: panes on the left.</span></span>
+              <span class="pm-title">One pane at a time</span>
               <i class="pm-switch"></i>
             </div>
+            <div class="pm-row pm-compact pm-range-row">
+              <span class="pm-title">Transparency</span>
+              <span class="pm-slider" style="--v: 40%"><i></i></span>
+              <span class="pm-slider-value">40%</span>
+            </div>
           </div>
-          <div class="pm-footer"><span class="pm-links"><span>Shortcuts</span><span>What's new</span><span>Report a problem</span></span></div>
+          <div class="pm-footer">
+            <span class="pm-links"><span>Shortcuts</span><span>What's new</span><span>Report a problem</span></span>
+            <span class="pm-meta"><span>Reset settings</span></span>
+          </div>
         </div>
       </div>
     </section>
@@ -584,6 +599,6 @@
     </div>
   </footer>
 
-  <script src="script.js?v=48"></script>
+  <script src="script.js?v=49"></script>
 </body>
 </html>
