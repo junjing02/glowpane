@@ -2612,8 +2612,9 @@
     if (Date.now() - lastStartAt < 1500) return;
     const player = document.getElementById("movie_player");
     if (player && (player.classList.contains("ad-showing") || player.classList.contains("ad-interrupting"))) return;
-    enterRecsFocusMode();
+    // First, so a problem in the widening can't stop it.
     maybeAskForRating();
+    enterRecsFocusMode();
   }
 
   // The <video> element is a fresh one every navigation (new video, or a
