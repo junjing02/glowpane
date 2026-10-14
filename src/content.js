@@ -1715,6 +1715,82 @@
     document.body.appendChild(note);
   }
 
+  // ---- Rating request ----
+  // One time only: once the split has shown on RATE_AFTER_VIDEOS different
+  // videos, the next video that ends shows a small card asking for a
+  // Chrome Web Store rating (the end of a video, so it never interrupts
+  // one). Marked as asked the moment it shows, so it never comes back,
+  // whatever the user does with it. It stays until clicked (not removed
+  // on teardown, since autoplay would take it away within seconds), so it
+  // uses the fail-safe note's own colors, not the --split-* tokens.
+  const RATE_ID = "yt-split-rate";
+  const RATE_AFTER_VIDEOS = 10;
+  const RATE_URL =
+    "https://chromewebstore.google.com/detail/glowpane-comments-beside/nmdfidalgjjfgiekdkcjohnfaehojdin/reviews";
+  let videosSeen = 0;
+  let rateAsked = true; // assume asked until storage answers
+  let lastCountedVideo = null;
+
+  // From ensureLayout(): the split is showing on this video.
+  function countVideo() {
+    if (!storageLoaded || rateAsked || windowRole === "companion") return;
+    const id = new URLSearchParams(location.search).get("v");
+    if (!id || id === lastCountedVideo) return;
+    lastCountedVideo = id;
+    videosSeen += 1;
+    try {
+      chrome.storage.local.set({ videosSeen });
+    } catch (e) {
+      // extension reloaded; the count simply pauses
+    }
+  }
+
+  function hideRateCard() {
+    const card = document.getElementById(RATE_ID);
+    if (card) card.remove();
+  }
+
+  function maybeAskForRating() {
+    if (!storageLoaded || rateAsked || videosSeen < RATE_AFTER_VIDEOS || windowRole !== "none") return;
+    if (document.getElementById(WELCOME_ID) || document.getElementById(FAILSAFE_NOTE_ID)) return;
+    rateAsked = true;
+    try {
+      chrome.storage.local.set({ rateAsked: true });
+    } catch (e) {
+      return; // extension reloaded; ask in a fresh page instead
+    }
+    const card = document.createElement("div");
+    card.id = RATE_ID;
+    card.setAttribute("role", "status");
+    const title = document.createElement("div");
+    title.className = "yt-split-failsafe-title";
+    title.textContent = "Enjoying Glowpane?";
+    const text = document.createElement("p");
+    text.textContent = "A rating on the Chrome Web Store helps other people find it. It only takes a moment.";
+    const actions = document.createElement("div");
+    actions.className = "yt-split-failsafe-actions";
+    const rate = document.createElement("button");
+    rate.type = "button";
+    rate.textContent = "Rate Glowpane";
+    // No focus on click, so the next spacebar press still reaches the player.
+    rate.addEventListener("mousedown", (e) => e.preventDefault());
+    rate.addEventListener("click", () => {
+      window.open(RATE_URL, "_blank", "noopener");
+      hideRateCard();
+    });
+    const later = document.createElement("a");
+    later.href = "#";
+    later.textContent = "Not now";
+    later.addEventListener("mousedown", (e) => e.preventDefault());
+    later.addEventListener("click", (e) => {
+      e.preventDefault();
+      hideRateCard();
+    });
+    actions.append(rate, later);
+    card.append(title, text, actions);
+    document.body.appendChild(card);
+  }
+
   // ---- Wide side pane ----
   // When the side pane is half the layout or wider (a vertical video's
   // 50/50 default, a divider dragged that far, or a wide two-window
@@ -2076,6 +2152,7 @@
     observeSidePane(sidePane);
     updateWideSide();
     maybeShowWelcome();
+    countVideo();
 
     // Deliberately NOT reclamping side/top width here. This function runs
     // on every MutationObserver-triggered pass — and YouTube's page mutates
@@ -2536,6 +2613,7 @@
     const player = document.getElementById("movie_player");
     if (player && (player.classList.contains("ad-showing") || player.classList.contains("ad-interrupting"))) return;
     enterRecsFocusMode();
+    maybeAskForRating();
   }
 
   // The <video> element is a fresh one every navigation (new video, or a
@@ -3207,11 +3285,13 @@
   }
 
   try {
-    chrome.storage.local.get({ ...DEFAULT_SETTINGS, savedLayout: null, welcomeSeen: false, seenVersion: null }).then((stored) => {
+    chrome.storage.local.get({ ...DEFAULT_SETTINGS, savedLayout: null, welcomeSeen: false, seenVersion: null, videosSeen: 0, rateAsked: false }).then((stored) => {
       for (const key of Object.keys(DEFAULT_SETTINGS)) settings[key] = stored[key];
       savedLayout = stored.savedLayout;
       welcomeSeen = !!stored.welcomeSeen;
       seenVersion = stored.seenVersion;
+      videosSeen = Number(stored.videosSeen) || 0;
+      rateAsked = !!stored.rateAsked;
       storageLoaded = true;
       applyAmbientSettings();
       applyPaneTransparency();
@@ -3245,6 +3325,9 @@
       if (paneChange && wasVideoOnly !== isVideoOnly()) rebuild = true;
       if (paneChange && !rebuild && isWatchPage()) ensureLayout();
       if (changes.welcomeSeen) welcomeSeen = !!changes.welcomeSeen.newValue;
+      // Other tabs count videos and ask for the rating too: one shared count.
+      if (changes.videosSeen) videosSeen = Number(changes.videosSeen.newValue) || 0;
+      if (changes.rateAsked) rateAsked = !!changes.rateAsked.newValue;
       if (changes.seenVersion) {
         seenVersion = changes.seenVersion.newValue;
         if (seenVersion === WHATS_NEW.version) hideWelcome(); // dismissed in another tab

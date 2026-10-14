@@ -3020,6 +3020,15 @@ img {
   text-underline-offset: 3px;
 }
 
+/* Buttons on a reading page (bye.html) keep their own colors. */
+.prose a.btn {
+  text-decoration: none;
+}
+
+.prose a.btn-primary {
+  color: var(--on-accent);
+}
+
 .prose-meta {
   margin-top: 48px;
   font-size: 14px;

@@ -1452,10 +1452,12 @@ html.yt-split-active.yt-split-wide-side
   cursor: pointer;
 }
 
-/* Fail-safe note (content.js "Fail-safe"). Shown after the layout has been
-   torn down, so it can't use the --split-* tokens (they only exist while
-   the split is on): its colors are spelled out for both themes. */
-#yt-split-failsafe {
+/* Fail-safe note (content.js "Fail-safe"), also used by the one-time
+   rating card (content.js "Rating request"). Both can show while the split
+   is off, so they can't use the --split-* tokens (they only exist while
+   the split is on): their colors are spelled out for both themes. */
+#yt-split-failsafe,
+#yt-split-rate {
   position: fixed;
   right: 20px;
   bottom: 20px;
@@ -1472,30 +1474,31 @@ html.yt-split-active.yt-split-wide-side
   line-height: 1.45;
 }
 
-html:not([dark]) #yt-split-failsafe {
+html:not([dark]) #yt-split-failsafe,
+html:not([dark]) #yt-split-rate {
   border-color: rgba(0, 0, 0, 0.15);
   background: #ffffff;
   color: #0f0f0f;
 }
 
-#yt-split-failsafe .yt-split-failsafe-title {
+:is(#yt-split-failsafe, #yt-split-rate) .yt-split-failsafe-title {
   margin-bottom: 6px;
   font-size: 14px;
   font-weight: 600;
 }
 
-#yt-split-failsafe p {
+:is(#yt-split-failsafe, #yt-split-rate) p {
   margin: 0 0 12px;
   opacity: 0.75;
 }
 
-#yt-split-failsafe .yt-split-failsafe-actions {
+:is(#yt-split-failsafe, #yt-split-rate) .yt-split-failsafe-actions {
   display: flex;
   align-items: center;
   gap: 14px;
 }
 
-#yt-split-failsafe button {
+:is(#yt-split-failsafe, #yt-split-rate) button {
   padding: 6px 14px;
   border: none;
   border-radius: 999px;
@@ -1506,12 +1509,12 @@ html:not([dark]) #yt-split-failsafe {
   cursor: pointer;
 }
 
-html:not([dark]) #yt-split-failsafe button {
+html:not([dark]) :is(#yt-split-failsafe, #yt-split-rate) button {
   background: #0f0f0f;
   color: #ffffff;
 }
 
-#yt-split-failsafe a {
+:is(#yt-split-failsafe, #yt-split-rate) a {
   color: inherit;
   opacity: 0.75;
   text-decoration: underline;

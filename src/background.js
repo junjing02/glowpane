@@ -248,6 +248,10 @@ chrome.windows.onBoundsChanged.addListener((win) =>
   })
 );
 
+// Removing Glowpane opens a short goodbye page on its website: why it was
+// removed (feedback), quick fixes, and a way back. Nothing is sent with it.
+chrome.runtime.setUninstallURL("https://junjing02.github.io/glowpane/bye.html");
+
 // A new install: YouTube tabs that are already open don't get the content
 // scripts until their next page load, so Glowpane looked broken until the
 // user reloaded (most people install from the store with YouTube open).
