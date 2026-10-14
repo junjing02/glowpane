@@ -1363,6 +1363,108 @@ img {
   font-size: 17px;
 }
 
+/* Video: the 37-second tour. A poster with a play button until clicked,
+   then YouTube's player in the same 16:9 frame (script.js). */
+.video-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  margin-top: 48px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #120f26;
+  box-shadow: var(--shadow-window);
+}
+
+.video-play {
+  position: absolute;
+  inset: 0;
+  display: block;
+  cursor: pointer;
+}
+
+.video-play img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s var(--ease);
+}
+
+.video-play:hover img {
+  transform: scale(1.015);
+}
+
+.video-play:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: -6px;
+  border-radius: 14px;
+}
+
+.video-play-icon {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  transform: translate(-50%, -50%);
+  transition: transform 0.2s ease;
+}
+
+.video-play:hover .video-play-icon {
+  transform: translate(-50%, -50%) scale(1.07);
+}
+
+.video-play-icon svg {
+  width: 30px;
+  height: 30px;
+  margin-left: 4px;
+  fill: #111316;
+}
+
+.video-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.video-note {
+  margin: 12px 0 0;
+  color: var(--text-dim);
+  font-size: 13px;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .video-frame {
+    margin-top: 32px;
+    border-radius: 10px;
+  }
+
+  .video-play-icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .video-play-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .video-play img,
+  .video-play-icon {
+    transition: none;
+  }
+}
+
 /* Glow: the one section about the ambient light itself. A realistic
    mock of the split (the two-window demo's main window, reused as a still:
    .tw-window and everything inside it) with the glow turned up a little,

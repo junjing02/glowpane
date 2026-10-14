@@ -37,14 +37,26 @@
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
   }
   </script>
-  <link rel="icon" href="icon.png?v=47" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    "name": "Glowpane: read YouTube comments without losing the video",
+    "description": "A 37-second tour of Glowpane, a free Chrome extension that puts the YouTube video on the left and the comments on the right, with an ambient light that glows with the video.",
+    "thumbnailUrl": "https://junjing02.github.io/glowpane/video-poster.jpg",
+    "uploadDate": "2026-10-14",
+    "duration": "PT37S",
+    "embedUrl": "https://www.youtube-nocookie.com/embed/4ZZCkTg6xIo"
+  }
+  </script>
+  <link rel="icon" href="icon.png?v=48" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&display=swap" />
   <!-- ?v= busts GitHub Pages' 10-minute browser cache (max-age=600) so new HTML never
        loads with a stale stylesheet/script. Bump it whenever style.css or script.js changes. -->
-  <script src="theme.js?v=47"></script>
-  <link rel="stylesheet" href="style.css?v=47" />
+  <script src="theme.js?v=48"></script>
+  <link rel="stylesheet" href="style.css?v=48" />
 </head>
 <body>
   <!-- Decorative page backdrop (style.css "Page backdrop"). -->
@@ -57,7 +69,7 @@
   <header class="nav">
     <div class="container nav-inner">
       <a class="brand" href="#top">
-        <img src="icon.png?v=47" alt="" width="24" height="24" />
+        <img src="icon.png?v=48" alt="" width="24" height="24" />
         <span>Glowpane</span>
       </a>
       <nav aria-label="Primary">
@@ -80,7 +92,7 @@
         </p>
         <div class="cta-row">
           <a href="https://chromewebstore.google.com/detail/glowpane-comments-beside/nmdfidalgjjfgiekdkcjohnfaehojdin" class="btn btn-primary">Add to Chrome, it's free</a>
-          <a href="https://github.com/junjing02/glowpane" class="btn btn-secondary">View source</a>
+          <a href="#video" class="btn btn-secondary">Watch the video</a>
         </div>
         <p class="hero-meta">Free, no sign-up. Works in Chrome, Edge, Brave and other Chromium browsers.</p>
       </div>
@@ -194,6 +206,20 @@
       </div>
     </section>
 
+    <!-- The video loads from YouTube (privacy-enhanced mode) only after a
+         click; until then it's a local poster image (script.js swaps it). -->
+    <section id="video" class="container section video-section">
+      <h2 class="section-title">See it in 37 seconds.</h2>
+      <p class="section-lead">A quick tour, with sound.</p>
+      <div class="video-frame">
+        <a class="video-play" href="https://www.youtube.com/watch?v=4ZZCkTg6xIo" data-id="4ZZCkTg6xIo" aria-label="Play the Glowpane video (37 seconds)">
+          <img src="video-poster.jpg?v=48" alt="" width="1280" height="720" loading="lazy" decoding="async" />
+          <span class="video-play-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg></span>
+        </a>
+      </div>
+      <p class="video-note">Plays from YouTube.</p>
+    </section>
+
     <section id="glow" class="container section">
       <div class="glow-grid">
         <div>
@@ -209,7 +235,7 @@
           <div class="glow-spill glow-b"></div>
           <div class="glow-spill glow-c"></div>
           <div class="tw-window glow-window">
-            <div class="compare-dots tw-bar"><span></span><span></span><span></span><div class="mock-url"></div><img class="tw-ext-icon" src="icon.png?v=47" alt="" width="16" height="16" /></div>
+            <div class="compare-dots tw-bar"><span></span><span></span><span></span><div class="mock-url"></div><img class="tw-ext-icon" src="icon.png?v=48" alt="" width="16" height="16" /></div>
             <div class="tw-main-body">
               <div class="tw-ambient glow-a"></div>
               <div class="tw-ambient glow-b"></div>
@@ -307,7 +333,7 @@
         <div class="morph-label" aria-live="polite"><span class="morph-caption tw-caption">One window: the normal split</span></div>
         <div class="tw-stage" aria-hidden="true">
           <div class="tw-window tw-main">
-            <div class="compare-dots tw-bar"><span></span><span></span><span></span><div class="mock-url"></div><img class="tw-ext-icon" src="icon.png?v=47" alt="" width="16" height="16" /></div>
+            <div class="compare-dots tw-bar"><span></span><span></span><span></span><div class="mock-url"></div><img class="tw-ext-icon" src="icon.png?v=48" alt="" width="16" height="16" /></div>
             <div class="tw-main-body">
               <div class="tw-ambient tw-ambient-a"></div>
               <div class="tw-ambient tw-ambient-b"></div>
@@ -350,7 +376,7 @@
               </div>
             </div>
             <div class="tw-panel">
-              <div class="tw-panel-head"><img class="tw-panel-icon" src="icon.png?v=47" alt="" width="14" height="14" /><span>Glowpane</span></div>
+              <div class="tw-panel-head"><img class="tw-panel-icon" src="icon.png?v=48" alt="" width="14" height="14" /><span>Glowpane</span></div>
               <div class="tw-panel-row"><span>Two windows</span><i class="tw-switch"></i></div>
             </div>
           </div>
@@ -436,7 +462,7 @@
 
         <div class="panel-mock" aria-hidden="true">
           <div class="pm-header">
-            <img src="icon.png?v=47" alt="" width="22" height="22" />
+            <img src="icon.png?v=48" alt="" width="22" height="22" />
             <span class="pm-name">Glowpane</span>
             <i class="pm-switch is-on"></i>
           </div>
@@ -558,6 +584,6 @@
     </div>
   </footer>
 
-  <script src="script.js?v=47"></script>
+  <script src="script.js?v=48"></script>
 </body>
 </html>
