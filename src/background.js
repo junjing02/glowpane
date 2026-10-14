@@ -248,6 +248,29 @@ chrome.windows.onBoundsChanged.addListener((win) =>
   })
 );
 
+// A new install: YouTube tabs that are already open don't get the content
+// scripts until their next page load, so Glowpane looked broken until the
+// user reloaded (most people install from the store with YouTube open).
+// Add them now. Fresh installs only: after an update the old copy is still
+// running in those tabs, and a second copy would fight it over the page.
+// early.js is left out; it only matters in a second window, and there is
+// none yet.
+chrome.runtime.onInstalled.addListener(async ({ reason }) => {
+  if (reason !== "install") return;
+  const tabs = await chrome.tabs.query({ url: "https://www.youtube.com/*" });
+  for (const tab of tabs) {
+    if (tab.discarded) continue;
+    const target = { tabId: tab.id };
+    try {
+      await chrome.scripting.insertCSS({ target, files: ["src/content.css"] });
+      await chrome.scripting.executeScript({ target, files: ["src/content.js"] });
+      await chrome.scripting.executeScript({ target, files: ["src/page.js"], world: "MAIN" });
+    } catch (e) {
+      // Tab closed or still loading: it gets the scripts on its next load.
+    }
+  }
+});
+
 // Keyboard shortcuts (manifest "commands"; users can rebind them at
 // chrome://extensions/shortcuts). Two of them only flip the stored settings; the
 // tabs and the handlers above react to the storage change, exactly as if

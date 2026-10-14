@@ -66,4 +66,4 @@ Click the extension's toolbar icon for the settings: the split itself, Two windo
 
 ## Privacy
 
-Everything runs in your browser. Nothing is collected and nothing is sent anywhere. The extension asks only for access to youtube.com, to rearrange the page, and for storage, to remember your settings.
+Everything runs in your browser. Nothing is collected and nothing is sent anywhere. The extension asks only for access to youtube.com, to rearrange the page, for storage, to remember your settings, and for scripting, to start in YouTube tabs that are already open when you install it.
