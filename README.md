@@ -9,14 +9,14 @@
 <p align="center"><sub>Formerly Split for YouTube.</sub></p>
 
 <p align="center">
-  <a href="https://github.com/junjing02/glowpane/releases/latest"><img src="https://img.shields.io/github/v/release/junjing02/glowpane?label=version&color=111316" alt="Latest version" /></a>
+  <a href="https://chromewebstore.google.com/detail/glowpane-comments-beside/nmdfidalgjjfgiekdkcjohnfaehojdin"><img src="https://img.shields.io/chrome-web-store/v/nmdfidalgjjfgiekdkcjohnfaehojdin?label=chrome%20web%20store&color=111316" alt="Chrome Web Store" /></a>
   <a href="https://junjing02.github.io/glowpane/"><img src="https://img.shields.io/badge/site-live%20demo-111316" alt="Live demo" /></a>
   <img src="https://img.shields.io/badge/manifest-v3-111316" alt="Manifest V3" />
 </p>
 
 <p align="center">
   A free Chrome extension that puts the video on the left and everything else on the right.<br />
-  <a href="https://junjing02.github.io/glowpane/">See it in action →</a>
+  <a href="https://chromewebstore.google.com/detail/glowpane-comments-beside/nmdfidalgjjfgiekdkcjohnfaehojdin"><strong>Add to Chrome</strong></a> · <a href="https://junjing02.github.io/glowpane/">See it in action →</a>
 </p>
 
 <p align="center">
@@ -42,11 +42,9 @@
 
 ## Install
 
-1. [Download `glowpane.zip`](https://github.com/junjing02/glowpane/releases/latest/download/glowpane.zip) and unzip it.
-2. Open `chrome://extensions` and turn on **Developer mode**.
-3. Click **Load unpacked** and choose the `glowpane` folder.
+**[Add Glowpane to Chrome](https://chromewebstore.google.com/detail/glowpane-comments-beside/nmdfidalgjjfgiekdkcjohnfaehojdin)** from the Chrome Web Store. It's free, and updates arrive on their own.
 
-Works in Chrome, Edge, Brave and other Chromium browsers. To update, replace the folder with the latest download and click reload on the extension's card.
+Works in Chrome, Edge, Brave and other Chromium browsers.
 
 ## Two windows
 
