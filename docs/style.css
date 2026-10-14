@@ -633,16 +633,16 @@ img {
    outside the window. */
 .mock-ambient {
   position: absolute;
-  inset: -12%;
+  inset: -20%;
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.8s ease;
   background: radial-gradient(ellipse 42% 52% at 30% 45%, rgba(255, 184, 104, 0.85), transparent 70%),
     radial-gradient(ellipse 38% 48% at 50% 70%, rgba(255, 96, 150, 0.7), transparent 70%),
     radial-gradient(ellipse 55% 60% at 80% 40%, rgba(124, 104, 255, 0.45), transparent 70%);
-  background-size: 140% 140%;
+  background-size: 100% 100%;
   filter: blur(48px);
-  animation: sceneDrift 14s ease-in-out infinite alternate;
+  animation: ambientDrift 14s ease-in-out infinite alternate;
 }
 
 .morph-demo.is-after .mock-ambient {
@@ -745,20 +745,37 @@ img {
 
 .mock-scene {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 140%;
+  height: 140%;
   background: radial-gradient(ellipse 60% 70% at 30% 35%, rgba(255, 184, 104, 0.6), transparent 70%),
     radial-gradient(ellipse 50% 60% at 78% 70%, rgba(255, 96, 150, 0.5), transparent 70%),
     linear-gradient(160deg, #1d1430, #0b0a12 70%);
-  background-size: 140% 140%;
+  background-size: 100% 100%;
   animation: sceneDrift 14s ease-in-out infinite alternate;
 }
 
+/* The drift moves the layer itself (transform), not its background: a
+   background-position animation repaints the gradient, and re-blurs the
+   glow layers, on every frame, which stuttered on phones (reported). The
+   scene is 140% of the video and slides by the spare 40%; the glow reaches
+   20% past the window on each side and slides by half of that. */
 @keyframes sceneDrift {
   from {
-    background-position: 0% 0%;
+    transform: translate3d(0, 0, 0);
   }
   to {
-    background-position: 100% 100%;
+    transform: translate3d(-28.5714%, -28.5714%, 0);
+  }
+}
+
+@keyframes ambientDrift {
+  from {
+    transform: translate3d(7.14%, 7.14%, 0);
+  }
+  to {
+    transform: translate3d(-7.14%, -7.14%, 0);
   }
 }
 
@@ -782,17 +799,19 @@ img {
 .mock-progress span {
   display: block;
   height: 100%;
-  width: 18%;
+  width: 82%;
   background: #ff0033;
+  transform-origin: 0 50%;
   animation: mockPlay 40s linear infinite;
 }
 
+/* From 18% to 82% of the bar, as a transform (no layout per frame). */
 @keyframes mockPlay {
   from {
-    width: 18%;
+    transform: scaleX(0.2195);
   }
   to {
-    width: 82%;
+    transform: scaleX(1);
   }
 }
 
@@ -1312,6 +1331,10 @@ img {
     animation: none;
   }
 
+  .mock-progress span {
+    width: 18%;
+  }
+
   .morph-scroll-list {
     scroll-behavior: auto;
   }
@@ -1338,6 +1361,108 @@ img {
   max-width: 30em;
   color: var(--text-dim);
   font-size: 17px;
+}
+
+/* Video: the 37-second tour. A poster with a play button until clicked,
+   then YouTube's player in the same 16:9 frame (script.js). */
+.video-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  margin-top: 48px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #120f26;
+  box-shadow: var(--shadow-window);
+}
+
+.video-play {
+  position: absolute;
+  inset: 0;
+  display: block;
+  cursor: pointer;
+}
+
+.video-play img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s var(--ease);
+}
+
+.video-play:hover img {
+  transform: scale(1.015);
+}
+
+.video-play:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: -6px;
+  border-radius: 14px;
+}
+
+.video-play-icon {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  transform: translate(-50%, -50%);
+  transition: transform 0.2s ease;
+}
+
+.video-play:hover .video-play-icon {
+  transform: translate(-50%, -50%) scale(1.07);
+}
+
+.video-play-icon svg {
+  width: 30px;
+  height: 30px;
+  margin-left: 4px;
+  fill: #111316;
+}
+
+.video-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.video-note {
+  margin: 12px 0 0;
+  color: var(--text-dim);
+  font-size: 13px;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .video-frame {
+    margin-top: 32px;
+    border-radius: 10px;
+  }
+
+  .video-play-icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .video-play-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .video-play img,
+  .video-play-icon {
+    transition: none;
+  }
 }
 
 /* Glow: the one section about the ambient light itself. A realistic
@@ -1398,14 +1523,14 @@ img {
 .glow-stage .tw-ambient {
   --glow-on: min(1, calc(var(--mock-glow) * 1.2));
   opacity: 0;
-  background-size: 140% 140%;
-  animation: sceneDrift 5s ease-in-out infinite alternate, glowFade 9s linear infinite;
+  background-size: 100% 100%;
+  animation: ambientDrift 5s ease-in-out infinite alternate, glowFade 9s linear infinite;
 }
 
 .glow-stage .tw-scene {
   --glow-on: 1;
   opacity: 0;
-  background-size: 140% 140%;
+  background-size: 100% 100%;
   transition: none;
   animation: sceneDrift 5s ease-in-out infinite alternate, glowFade 9s linear infinite;
 }
@@ -1483,18 +1608,20 @@ img {
 /* A soft band of light crossing the video now and then. */
 .glow-sweep {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 300%;
+  height: 100%;
   background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.14) 50%, transparent 65%);
-  background-size: 300% 100%;
   animation: glowSweep 4.5s ease-in-out infinite;
 }
 
 @keyframes glowSweep {
   from {
-    background-position: 100% 0;
+    transform: translate3d(-66.6667%, 0, 0);
   }
   to {
-    background-position: 0% 0;
+    transform: translate3d(0, 0, 0);
   }
 }
 
@@ -2071,18 +2198,18 @@ img {
 .tw-ambient {
   position: absolute;
   z-index: -1;
-  inset: -12%;
+  inset: -20%;
   pointer-events: none;
   filter: blur(48px);
   transition: opacity 0.6s ease;
-  animation: sceneDrift 14s ease-in-out infinite alternate;
+  animation: ambientDrift 14s ease-in-out infinite alternate;
 }
 
 .tw-ambient-a {
   background: radial-gradient(ellipse 42% 52% at 32% 50%, rgba(255, 184, 104, 0.85), transparent 70%),
     radial-gradient(ellipse 38% 48% at 60% 70%, rgba(255, 96, 150, 0.7), transparent 70%),
     radial-gradient(ellipse 55% 60% at 80% 40%, rgba(124, 104, 255, 0.45), transparent 70%);
-  background-size: 140% 140%;
+  background-size: 100% 100%;
   opacity: var(--mock-glow);
 }
 
@@ -2090,7 +2217,7 @@ img {
   background: radial-gradient(ellipse 45% 55% at 62% 45%, rgba(124, 104, 255, 0.85), transparent 70%),
     radial-gradient(ellipse 40% 50% at 30% 70%, rgba(255, 184, 104, 0.55), transparent 70%),
     radial-gradient(ellipse 55% 60% at 80% 30%, rgba(255, 96, 150, 0.5), transparent 70%);
-  background-size: 140% 140%;
+  background-size: 100% 100%;
   opacity: 0;
 }
 
@@ -2166,7 +2293,10 @@ img {
    one the cursor picks), cross-faded on switch. */
 .tw-scene {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 140%;
+  height: 140%;
   transition: opacity 0.6s ease;
   animation: sceneDrift 14s ease-in-out infinite alternate;
 }
@@ -2175,14 +2305,14 @@ img {
   background: radial-gradient(ellipse 60% 70% at 30% 35%, rgba(255, 184, 104, 0.6), transparent 70%),
     radial-gradient(ellipse 50% 60% at 78% 70%, rgba(255, 96, 150, 0.5), transparent 70%),
     linear-gradient(160deg, #1d1430, #0b0a12 70%);
-  background-size: 140% 140%;
+  background-size: 100% 100%;
 }
 
 .tw-scene-b {
   background: radial-gradient(ellipse 55% 65% at 65% 40%, rgba(124, 104, 255, 0.65), transparent 70%),
     radial-gradient(ellipse 45% 55% at 25% 72%, rgba(255, 184, 104, 0.4), transparent 70%),
     linear-gradient(200deg, #141a38, #0b0a12 70%);
-  background-size: 140% 140%;
+  background-size: 100% 100%;
   opacity: 0;
 }
 
@@ -2505,14 +2635,14 @@ img {
 .pm-slider::before {
   content: "";
   position: absolute;
-  inset: 0 30% 0 0;
+  inset: 0 calc(100% - var(--v, 70%)) 0 0;
   border-radius: 2px;
   background: var(--accent);
 }
 
 .pm-slider i {
   position: absolute;
-  left: 70%;
+  left: var(--v, 70%);
   top: 50%;
   width: 14px;
   height: 14px;
@@ -2557,20 +2687,51 @@ img {
   font-variant-numeric: tabular-nums;
 }
 
+/* Group headings, as in the real panel (Layout, Glow, Panes). */
+.pm-head {
+  margin: 12px 0 0;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pm-head + .pm-row {
+  padding-top: 6px;
+}
+
+/* A one-line row with a slider (Transparency). */
+.pm-row.pm-range-row {
+  gap: 12px;
+}
+
+.pm-range-row .pm-title {
+  flex: 0 0 auto;
+}
+
 .pm-footer {
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 4px;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
   padding-top: 10px;
   border-top: 1px solid var(--border);
   color: var(--text-dim);
   font-size: 12px;
 }
 
-.pm-links {
+.pm-links,
+.pm-meta {
   display: flex;
+  justify-content: space-between;
   gap: 12px;
+}
+
+.pm-meta {
+  justify-content: flex-end;
+  font-size: 11px;
+  opacity: 0.8;
 }
 
 @media (max-width: 860px) {
@@ -2892,6 +3053,16 @@ img {
     padding-top: 88px;
     padding-bottom: 88px;
   }
+}
+
+/* Mockup loops stop while their mockup is off screen (script.js sets the
+   class), so a phone only animates what is in view. */
+.is-offscreen,
+.is-offscreen *,
+.is-offscreen::before,
+.is-offscreen *::before,
+.is-offscreen *::after {
+  animation-play-state: paused !important;
 }
 
 /* Phones: every mockup keeps its landscape, desktop-sized window, because

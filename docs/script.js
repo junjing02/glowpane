@@ -29,6 +29,35 @@ if (nav) {
   window.addEventListener("resize", fit);
 })();
 
+// The mockups' CSS loops run only while the mockup is on (or near) the
+// screen; off screen they only cost frames, which showed on phones.
+if ("IntersectionObserver" in window) {
+  const mockObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => entry.target.classList.toggle("is-offscreen", !entry.isIntersecting));
+    },
+    { rootMargin: "120px" }
+  );
+  document.querySelectorAll(".morph-demo, .tw-demo, .glow-stage").forEach((el) => mockObserver.observe(el));
+}
+
+// Video: a poster until clicked, then YouTube's player (privacy-enhanced
+// mode) in its place, playing. Without JS the poster is a plain link.
+const videoPlay = document.querySelector(".video-play");
+if (videoPlay) {
+  videoPlay.addEventListener("click", (e) => {
+    e.preventDefault();
+    const iframe = document.createElement("iframe");
+    iframe.src = `https://www.youtube-nocookie.com/embed/${videoPlay.dataset.id}?autoplay=1&rel=0&playsinline=1`;
+    iframe.title = "Glowpane: a 37-second tour";
+    iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+    iframe.allowFullscreen = true;
+    iframe.referrerPolicy = "strict-origin-when-cross-origin";
+    videoPlay.replaceWith(iframe);
+    iframe.focus();
+  });
+}
+
 // Copy buttons (chrome://extensions can't be opened from a link). Hidden
 // in the HTML and only revealed where the Clipboard API is available.
 if (navigator.clipboard && window.isSecureContext) {
