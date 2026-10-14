@@ -49,14 +49,14 @@
     "embedUrl": "https://www.youtube-nocookie.com/embed/4ZZCkTg6xIo"
   }
   </script>
-  <link rel="icon" href="icon.png?v=49" />
+  <link rel="icon" href="icon.png?v=50" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&display=swap" />
   <!-- ?v= busts GitHub Pages' 10-minute browser cache (max-age=600) so new HTML never
        loads with a stale stylesheet/script. Bump it whenever style.css or script.js changes. -->
-  <script src="theme.js?v=49"></script>
-  <link rel="stylesheet" href="style.css?v=49" />
+  <script src="theme.js?v=50"></script>
+  <link rel="stylesheet" href="style.css?v=50" />
 </head>
 <body>
   <!-- Decorative page backdrop (style.css "Page backdrop"). -->
@@ -69,7 +69,7 @@
   <header class="nav">
     <div class="container nav-inner">
       <a class="brand" href="#top">
-        <img src="icon.png?v=49" alt="" width="24" height="24" />
+        <img src="icon.png?v=50" alt="" width="24" height="24" />
         <span>Glowpane</span>
       </a>
       <nav aria-label="Primary">
@@ -95,6 +95,8 @@
           <a href="#video" class="btn btn-secondary">Watch the video</a>
         </div>
         <p class="hero-meta">Free, no sign-up. Works in Chrome, Edge, Brave and other Chromium browsers.</p>
+        <!-- Phones only (script.js reveals it): the extension can't be installed there. -->
+        <p class="phone-note" hidden>On a phone? Glowpane runs in Chrome on a computer. <button class="share-btn" type="button">Send me the link</button></p>
       </div>
 
       <div class="morph-demo" id="morphDemo">
@@ -213,7 +215,7 @@
       <p class="section-lead">A quick tour, with sound.</p>
       <div class="video-frame">
         <a class="video-play" href="https://www.youtube.com/watch?v=4ZZCkTg6xIo" data-id="4ZZCkTg6xIo" aria-label="Play the Glowpane video (37 seconds)">
-          <img src="video-poster.jpg?v=49" alt="" width="1280" height="720" loading="lazy" decoding="async" />
+          <img src="video-poster.jpg?v=50" alt="" width="1280" height="720" loading="lazy" decoding="async" />
           <span class="video-play-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg></span>
         </a>
       </div>
@@ -235,7 +237,7 @@
           <div class="glow-spill glow-b"></div>
           <div class="glow-spill glow-c"></div>
           <div class="tw-window glow-window">
-            <div class="compare-dots tw-bar"><span></span><span></span><span></span><div class="mock-url"></div><img class="tw-ext-icon" src="icon.png?v=49" alt="" width="16" height="16" /></div>
+            <div class="compare-dots tw-bar"><span></span><span></span><span></span><div class="mock-url"></div><img class="tw-ext-icon" src="icon.png?v=50" alt="" width="16" height="16" /></div>
             <div class="tw-main-body">
               <div class="tw-ambient glow-a"></div>
               <div class="tw-ambient glow-b"></div>
@@ -333,7 +335,7 @@
         <div class="morph-label" aria-live="polite"><span class="morph-caption tw-caption">One window: the normal split</span></div>
         <div class="tw-stage" aria-hidden="true">
           <div class="tw-window tw-main">
-            <div class="compare-dots tw-bar"><span></span><span></span><span></span><div class="mock-url"></div><img class="tw-ext-icon" src="icon.png?v=49" alt="" width="16" height="16" /></div>
+            <div class="compare-dots tw-bar"><span></span><span></span><span></span><div class="mock-url"></div><img class="tw-ext-icon" src="icon.png?v=50" alt="" width="16" height="16" /></div>
             <div class="tw-main-body">
               <div class="tw-ambient tw-ambient-a"></div>
               <div class="tw-ambient tw-ambient-b"></div>
@@ -376,7 +378,7 @@
               </div>
             </div>
             <div class="tw-panel">
-              <div class="tw-panel-head"><img class="tw-panel-icon" src="icon.png?v=49" alt="" width="14" height="14" /><span>Glowpane</span></div>
+              <div class="tw-panel-head"><img class="tw-panel-icon" src="icon.png?v=50" alt="" width="14" height="14" /><span>Glowpane</span></div>
               <div class="tw-panel-row"><span>Two windows</span><i class="tw-switch"></i></div>
             </div>
           </div>
@@ -462,7 +464,7 @@
 
         <div class="panel-mock" aria-hidden="true">
           <div class="pm-header">
-            <img src="icon.png?v=49" alt="" width="22" height="22" />
+            <img src="icon.png?v=50" alt="" width="22" height="22" />
             <span class="pm-name">Glowpane</span>
             <i class="pm-switch is-on"></i>
           </div>
@@ -545,6 +547,7 @@
             <li>Open any YouTube video.</li>
           </ol>
           <p class="note">The split turns on in a large, landscape window. In smaller windows, YouTube keeps its normal layout. Works in Chrome, Edge, Brave and other Chromium browsers.</p>
+          <p class="note phone-note" hidden>On a phone? Install it from a computer. <button class="share-btn" type="button">Send me the link</button></p>
         </div>
       </div>
     </section>
@@ -558,11 +561,11 @@
           </details>
           <details class="faq-item">
             <summary>Which browsers does it work in?</summary>
-            <p>Chrome, Edge, Brave and other Chromium-based browsers. Firefox and Safari aren't supported.</p>
+            <p>Chrome, Edge, Brave and other Chromium-based browsers, on a computer. In Edge, choose <strong>Allow extensions from other stores</strong> when the store asks. Firefox, Safari and phones aren't supported.</p>
           </details>
           <details class="faq-item">
             <summary>Why don't I see the split layout?</summary>
-            <p>The split needs a large, landscape window, so make the window bigger or go full screen. It also steps aside in theater mode; press <kbd>t</kbd> to switch back.</p>
+            <p>If the YouTube tab was already open when you installed Glowpane, reload it once. The split also needs a large, landscape window, so make the window bigger or go full screen. It steps aside in theater mode too; press <kbd>t</kbd> to switch back.</p>
           </details>
           <details class="faq-item">
             <summary>What about vertical videos and live streams?</summary>
@@ -599,6 +602,6 @@
     </div>
   </footer>
 
-  <script src="script.js?v=49"></script>
+  <script src="script.js?v=50"></script>
 </body>
 </html>

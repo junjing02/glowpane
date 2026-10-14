@@ -2821,10 +2821,21 @@ img {
   font-size: 14px;
 }
 
-/* One-click copy for chrome://extensions (browsers won't open that URL
-   from a link). Hidden in the HTML; script.js reveals it only where the
-   Clipboard API works. */
-.copy-btn {
+/* Phones only: "Send me the link" (the extension needs a computer).
+   Hidden in the HTML; script.js reveals it on touch-only screens. Plain
+   block text so the hidden attribute still works. */
+.phone-note {
+  margin: 14px 0 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-dim);
+}
+
+.note.phone-note {
+  margin-top: 12px;
+}
+
+.share-btn {
   margin: 0 4px 0 6px;
   padding: 1px 9px;
   border: 1px solid var(--line);
@@ -2840,12 +2851,20 @@ img {
   transition: color 0.15s ease, border-color 0.15s ease;
 }
 
-.copy-btn:hover {
+.share-btn:hover {
   border-color: var(--line-strong);
   color: var(--text);
 }
 
-.copy-btn.is-copied {
+/* A finger-sized target. */
+.phone-note .share-btn {
+  margin: 4px 0 0;
+  padding: 6px 14px;
+  font-size: 14px;
+  vertical-align: baseline;
+}
+
+.share-btn.is-done {
   color: var(--text);
 }
 

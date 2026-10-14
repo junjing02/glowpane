@@ -58,22 +58,31 @@ if (videoPlay) {
   });
 }
 
-// Copy buttons (chrome://extensions can't be opened from a link). Hidden
-// in the HTML and only revealed where the Clipboard API is available.
-if (navigator.clipboard && window.isSecureContext) {
-  document.querySelectorAll(".copy-btn").forEach((btn) => {
-    btn.hidden = false;
+// Phones (touch only, no mouse): the extension can't be installed there,
+// and many visitors come from YouTube Shorts or Threads on a phone. Show a
+// note with a button that sends the page link on (share sheet, or the
+// clipboard where there's no share sheet), so they can open it on a computer.
+const sharePage = navigator.share || (navigator.clipboard && window.isSecureContext);
+if (sharePage && window.matchMedia("(hover: none) and (pointer: coarse)").matches) {
+  const url = "https://junjing02.github.io/glowpane/";
+  document.querySelectorAll(".phone-note").forEach((note) => (note.hidden = false));
+  document.querySelectorAll(".share-btn").forEach((btn) => {
+    const label = btn.textContent;
     btn.addEventListener("click", async () => {
       try {
-        await navigator.clipboard.writeText(btn.dataset.copy);
-        btn.textContent = "Copied";
-        btn.classList.add("is-copied");
+        if (navigator.share) {
+          await navigator.share({ title: "Glowpane", text: "Glowpane: read YouTube comments beside the video", url });
+          return;
+        }
+        await navigator.clipboard.writeText(url);
+        btn.textContent = "Link copied";
+        btn.classList.add("is-done");
         setTimeout(() => {
-          btn.textContent = "Copy";
-          btn.classList.remove("is-copied");
+          btn.textContent = label;
+          btn.classList.remove("is-done");
         }, 1600);
       } catch (e) {
-        // Clipboard blocked; the URL is still right there to copy by hand.
+        // Share sheet closed, or the clipboard is blocked: nothing to do.
       }
     });
   });
