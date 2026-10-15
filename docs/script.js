@@ -6,6 +6,20 @@ if (nav) {
   const updateNav = () => nav.classList.toggle("is-scrolled", window.scrollY > 8);
   updateNav();
   window.addEventListener("scroll", updateNav, { passive: true });
+
+  // Nav "Add to Chrome": folded away while the hero's own button is on
+  // screen (style.css). Set once before the first paint without animation,
+  // then animated from the next frame on.
+  const heroCta = document.querySelector(".hero .btn-primary");
+  if (heroCta && "IntersectionObserver" in window) {
+    const r = heroCta.getBoundingClientRect();
+    nav.classList.toggle("hero-cta-visible", r.bottom > 64 && r.top < window.innerHeight);
+    new IntersectionObserver(
+      ([entry]) => nav.classList.toggle("hero-cta-visible", entry.isIntersecting),
+      { rootMargin: "-64px 0px 0px 0px" }
+    ).observe(heroCta);
+    requestAnimationFrame(() => requestAnimationFrame(() => nav.classList.add("cta-animate")));
+  }
 }
 
 // Phones: the mock windows keep their landscape, desktop layout (the only
