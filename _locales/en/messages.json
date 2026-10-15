@@ -1,0 +1,10 @@
+{
+  "extName": {
+    "message": "Glowpane: Comments Beside the Video for YouTube",
+    "description": "Extension name in the store and in chrome://extensions."
+  },
+  "extDescription": {
+    "message": "Read YouTube comments without losing the video: a resizable side-by-side layout with ambient light and a synced two-window mode.",
+    "description": "Store summary, 132 characters at most."
+  }
+}

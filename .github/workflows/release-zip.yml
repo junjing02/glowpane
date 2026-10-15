@@ -1,4 +1,4 @@
-# Packages only the files the extension needs (manifest, everything in src/:
+# Packages only the files the extension needs (manifest, _locales, everything in src/:
 # content script and stylesheet, background worker, toolbar panel; icons) into glowpane.zip and attaches it to the GitHub
 # Release for the manifest's version. The landing page and README link to
 # releases/latest/download/glowpane.zip, so the download always
@@ -12,6 +12,7 @@ on:
       - manifest.json
       - "src/**"
       - "icons/*.png"
+      - "_locales/**"
       - .github/workflows/release-zip.yml
   workflow_dispatch:
 
@@ -30,6 +31,8 @@ jobs:
           cp manifest.json glowpane/
           cp src/*.js src/*.css src/*.html glowpane/src/
           cp icons/icon16.png icons/icon48.png icons/icon128.png glowpane/icons/
+          # Store name and summary in other languages (manifest __MSG_*__).
+          cp -r _locales glowpane/
           zip -r glowpane.zip glowpane
           # Chrome Web Store upload: manifest.json must sit at the top level.
           (cd glowpane && zip -r ../glowpane-store.zip .)

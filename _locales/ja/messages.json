@@ -1,0 +1,10 @@
+{
+  "extName": {
+    "message": "Glowpane: YouTube の動画の横にコメントを表示",
+    "description": "Extension name in the store and in chrome://extensions."
+  },
+  "extDescription": {
+    "message": "動画を見ながら YouTube のコメントを読めます。幅を変えられる2列レイアウト、アンビエントライト、同期する2ウィンドウモードに対応。",
+    "description": "Store summary, 132 characters at most."
+  }
+}

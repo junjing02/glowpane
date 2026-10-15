@@ -1,9 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "Glowpane: Comments Beside the Video for YouTube",
+  "name": "__MSG_extName__",
   "short_name": "Glowpane",
-  "version": "1.10.5",
-  "description": "Read YouTube comments without losing the video: a resizable side-by-side layout with ambient light and a synced two-window mode.",
+  "version": "1.10.6",
+  "description": "__MSG_extDescription__",
+  "default_locale": "en",
+  "homepage_url": "https://junjing02.github.io/glowpane/",
   "minimum_chrome_version": "111",
   "icons": {
     "16": "icons/icon16.png",
