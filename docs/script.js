@@ -41,20 +41,23 @@ if ("IntersectionObserver" in window) {
   document.querySelectorAll(".morph-demo, .tw-demo, .glow-stage").forEach((el) => mockObserver.observe(el));
 }
 
-// Video: a poster until clicked, then YouTube's player (privacy-enhanced
-// mode) in its place, playing. Without JS the poster is a plain link.
+// Video: a poster until clicked, then a plain <video> of demo.mp4 in its
+// place, playing (the click allows sound). Without JS the poster is a plain
+// link to the file.
 const videoPlay = document.querySelector(".video-play");
 if (videoPlay) {
   videoPlay.addEventListener("click", (e) => {
     e.preventDefault();
-    const iframe = document.createElement("iframe");
-    iframe.src = `https://www.youtube-nocookie.com/embed/${videoPlay.dataset.id}?autoplay=1&rel=0&playsinline=1`;
-    iframe.title = "Glowpane: a 37-second tour";
-    iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
-    iframe.allowFullscreen = true;
-    iframe.referrerPolicy = "strict-origin-when-cross-origin";
-    videoPlay.replaceWith(iframe);
-    iframe.focus();
+    const video = document.createElement("video");
+    video.src = videoPlay.getAttribute("href");
+    video.poster = videoPlay.querySelector("img").getAttribute("src");
+    video.controls = true;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.setAttribute("aria-label", "Glowpane: a 37-second tour");
+    videoPlay.replaceWith(video);
+    video.play().catch(() => {});
+    video.focus();
   });
 }
 
