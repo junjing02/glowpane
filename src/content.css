@@ -81,11 +81,13 @@ html.yt-shorts-glow {
   --split-ambient-blur: 40px;
   --split-ambient-grain: 0.35;
   --split-ambient-overscan: 260px;
+  --split-pane-bg: rgba(33, 33, 33, var(--split-pane-alpha, 0.6));
 }
 
 html.yt-shorts-glow:not([dark]) {
   --split-ambient-saturate: 1;
   --split-ambient-grain: 0.1;
+  --split-pane-bg: rgba(242, 242, 242, var(--split-pane-alpha, 0.6));
 }
 
 /* <ytd-shorts> hosts the glow layers: its own stacking context, so their
@@ -108,6 +110,27 @@ html.yt-shorts-glow.yt-split-ambient-on ytd-shorts ytd-reel-video-renderer {
 
 html.yt-shorts-glow.yt-split-ambient-on ytd-shorts [id^="cinematic"] {
   visibility: hidden !important;
+}
+
+/* Shorts side panels (comments, description) while the glow is on:
+   translucent like the watch page's panes, with the same "Pane
+   transparency" setting (--split-pane-alpha). Background color only, never
+   position, size or display (the 1.10.7 lesson). The panel gets the tint;
+   the containers inside it go transparent so the tint isn't stacked or
+   covered. Not a wildcard: buttons' hover fills and badges keep their own
+   backgrounds. Ids/tags from memory of YouTube's markup. */
+html.yt-shorts-glow.yt-split-ambient-on ytd-shorts ytd-engagement-panel-section-list-renderer {
+  background: var(--split-pane-bg) !important;
+}
+
+html.yt-shorts-glow.yt-split-ambient-on ytd-shorts :is(#watch-while-engagement-panel, #shorts-panel-container),
+html.yt-shorts-glow.yt-split-ambient-on ytd-shorts ytd-engagement-panel-section-list-renderer :is(
+    #header, #content, #contents, #continuations, #body, #main, #replies,
+    ytd-engagement-panel-title-header-renderer, ytd-section-list-renderer, ytd-item-section-renderer,
+    ytd-comments, ytd-comments-header-renderer, ytd-comment-thread-renderer, ytd-comment-view-model,
+    ytd-comment-renderer, ytd-comment-replies-renderer, ytd-comment-simplebox-renderer,
+    ytd-structured-description-content-renderer, ytd-video-description-header-renderer) {
+  background: transparent !important;
 }
 
 /* Full-bleed: #columns below is width: 100% of its own parent, but that
