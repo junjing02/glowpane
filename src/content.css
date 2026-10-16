@@ -96,7 +96,9 @@ html.yt-shorts-glow:not([dark]) {
    while our glow is on, the backgrounds of the containers between it and
    the Short (else an opaque one would hide it) and YouTube's own Shorts
    glow (hidden with visibility, like #cinematics on the watch page). The
-   container and glow ids are from memory of YouTube's markup. */
+   container and glow ids are from memory of YouTube's markup, except
+   .navigation-container (the up/down buttons column, a solid rgb(15,15,15)
+   strip at the right edge; confirmed from a DevTools report). */
 html.yt-shorts-glow ytd-shorts {
   isolation: isolate;
 }
@@ -104,7 +106,8 @@ html.yt-shorts-glow ytd-shorts {
 html.yt-shorts-glow.yt-split-ambient-on ytd-shorts,
 html.yt-shorts-glow.yt-split-ambient-on ytd-shorts #shorts-container,
 html.yt-shorts-glow.yt-split-ambient-on ytd-shorts #shorts-inner-container,
-html.yt-shorts-glow.yt-split-ambient-on ytd-shorts ytd-reel-video-renderer {
+html.yt-shorts-glow.yt-split-ambient-on ytd-shorts ytd-reel-video-renderer,
+html.yt-shorts-glow.yt-split-ambient-on ytd-shorts .navigation-container {
   background: transparent !important;
 }
 
