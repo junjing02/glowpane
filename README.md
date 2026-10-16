@@ -32,7 +32,7 @@
 - **Always in view** — the video keeps its own column while you scroll comments and recommendations.
 - **Resizable** — drag any divider (double-click to reset it), and collapse any section with one click.
 - **Adapts to the video** — vertical videos get an even split, and when the side pane is wide, recommendations and comments sit side by side.
-- **Ambient light** — the video's colors glow softly behind the page, in light theme too, which YouTube itself doesn't offer.
+- **Ambient light** — the video's colors glow softly behind the page, on Shorts too, and in light theme, which YouTube itself doesn't offer.
 - **Two windows** — keep the video here and the comments in a second window, always in sync.
 - **Thoughtful defaults** — live chat, light and dark themes, and the end of a video are all handled for you.
 - **Just the video** — drag the main divider to the window edge and the side pane closes; click the thin strip at that edge to bring it back.
