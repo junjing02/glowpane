@@ -1239,6 +1239,8 @@
     }
     const saved = loadAmbientPref();
     if (saved !== null) return { on: saved, source: "remembered setting" };
+    // Shorts have no watch-page glow canvas to guess from.
+    if (isShortsPage()) return { on: true, source: "Shorts (extension switch)" };
     const cinematics = document.querySelector("#cinematics, #cinematics-container");
     return { on: !!(cinematics && cinematics.querySelector("canvas")), source: "YouTube glow (guess)" };
   }
@@ -1253,7 +1255,10 @@
     console.debug(`[Glowpane] ambient light ${on ? "on" : "off"} (from ${source})`);
   }
 
-  function ensureAmbient(columns) {
+  // `host` is #columns on the watch page, <ytd-shorts> on Shorts (see
+  // "Ambient light on Shorts"); `mode` says where ambientTick finds the
+  // video.
+  function ensureAmbient(host, mode = "watch") {
     if (!ambient) {
       const root = document.createElement("div");
       root.id = AMBIENT_ID;
@@ -1283,11 +1288,16 @@
         lastCheck: 0,
         lastKey: "",
         stillFrames: 0,
+        mode,
       };
+    }
+    if (ambient.mode !== mode) {
+      ambient.mode = mode;
+      ambient.fresh = true;
     }
     // Glow before grain in tree order: both are z-index: -1, so tree order
     // decides which paints on top (the grain, overlay-blended onto the glow).
-    if (ambient.root.parentElement !== columns) columns.appendChild(ambient.root);
+    if (ambient.root.parentElement !== host) host.appendChild(ambient.root);
     if (ambient.grain.previousElementSibling !== ambient.root) ambient.root.after(ambient.grain);
     if (!ambient.rafId) ambient.rafId = requestAnimationFrame(ambientTick);
   }
@@ -1321,10 +1331,17 @@
     const frameMs = reducedMotion.matches ? AMBIENT_CALM_FRAME_MS : AMBIENT_FRAME_MS;
     if (!ambient.on || now - ambient.lastDraw < frameMs - 2) return;
 
-    const video = watchRoot().querySelector("#primary video, #movie_player video");
-    const player = document.querySelector("#player-container-outer");
-    if (!video || !player || video.readyState < 2) return;
-    const rect = player.getBoundingClientRect();
+    let video, rect;
+    if (ambient.mode === "shorts") {
+      const found = findShortsVideo();
+      if (!found) return;
+      ({ video, rect } = found);
+    } else {
+      video = watchRoot().querySelector("#primary video, #movie_player video");
+      const player = document.querySelector("#player-container-outer");
+      if (!video || !player || video.readyState < 2) return;
+      rect = player.getBoundingClientRect();
+    }
     if (rect.width <= 0 || rect.height <= 0) return;
 
     // While paused with nothing moving, keep redrawing only until the
@@ -1455,6 +1472,60 @@
     },
     true
   );
+
+  // ---- Ambient light on Shorts ----
+  // The same glow as the watch page, behind the Short that's on screen
+  // (v1.11.0, by request). Only the two glow layers are added, inside
+  // <ytd-shorts> (made its own stacking context by html.yt-shorts-glow in
+  // content.css, the same trick as #columns): Shorts keep YouTube's own
+  // layout. A CSS-only Shorts layout from the first version fought
+  // YouTube's comments panel and was removed in 1.10.7; don't move or
+  // restyle Shorts' own elements here. Off with the master switch or the
+  // "Ambient light" switch; in dark theme it also follows YouTube's
+  // Ambient mode, like the watch page.
+  const SHORTS_GLOW_CLASS = "yt-shorts-glow";
+
+  function isShortsPage() {
+    return location.pathname.startsWith("/shorts/");
+  }
+
+  function shortsHost() {
+    return document.querySelector("ytd-shorts:not([hidden])");
+  }
+
+  // The Short on screen: Shorts keep a few <video> elements around (the
+  // reel preloads its neighbours), so take the playable one nearest the
+  // middle of the window.
+  function findShortsVideo() {
+    const host = shortsHost();
+    if (!host) return null;
+    let best = null;
+    let bestDistance = Infinity;
+    for (const video of host.querySelectorAll("video")) {
+      if (video.readyState < 2 || !video.videoWidth) continue;
+      const rect = video.getBoundingClientRect();
+      if (rect.width < 50 || rect.height < 50 || rect.bottom <= 0 || rect.top >= innerHeight) continue;
+      const distance = Math.abs(rect.top + rect.height / 2 - innerHeight / 2);
+      if (distance < bestDistance) {
+        best = { video, rect };
+        bestDistance = distance;
+      }
+    }
+    return best;
+  }
+
+  function updateShortsGlow() {
+    const html = document.documentElement;
+    const host = isShortsPage() ? shortsHost() : null;
+    const wanted = !!host && settings.splitEnabled && settings.ambientEnabled && windowRole !== "companion";
+    if (wanted) {
+      html.classList.add(SHORTS_GLOW_CLASS);
+      ensureAmbient(host, "shorts");
+    } else if (html.classList.contains(SHORTS_GLOW_CLASS)) {
+      html.classList.remove(SHORTS_GLOW_CLASS);
+      if (ambient && ambient.mode === "shorts") teardownAmbient();
+    }
+  }
 
   // ---- Remembered layout ----
   // "Remember my layout" (toolbar panel): the divider position (as a
@@ -2244,7 +2315,7 @@
     if (reopen) reopen.remove();
     document.documentElement.classList.remove(CLOSING_CLASS);
 
-    teardownAmbient();
+    if (!ambient || ambient.mode !== "shorts") teardownAmbient();
     placeRelatedNatively();
     // #below is back in YouTube's own layout; fix the Subscribe button
     // there too once YouTube has re-rendered it.
@@ -2951,6 +3022,7 @@
 
   function onNavigateFinish() {
     start();
+    updateShortsGlow();
     maybeClaimMain();
   }
 
@@ -3079,6 +3151,7 @@
       checkLayoutHealth();
     }
     watchdogWasWatching = watching;
+    updateShortsGlow();
   }, 500);
 
   // Back/forward-button navigation doesn't always fire YouTube's own
