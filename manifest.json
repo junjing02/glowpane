@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "__MSG_extName__",
   "short_name": "Glowpane",
-  "version": "1.10.6",
+  "version": "1.10.7",
   "description": "__MSG_extDescription__",
   "default_locale": "en",
   "homepage_url": "https://junjing02.github.io/glowpane/",

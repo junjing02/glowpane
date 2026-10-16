@@ -195,10 +195,6 @@
     return location.pathname === "/watch";
   }
 
-  function isShortsPage() {
-    return location.pathname.startsWith("/shorts/");
-  }
-
   // options: { collapsed, onToggle } — when given, the header becomes
   // clickable and toggles a "yt-split-pane-collapsed" class on `container`.
   // Recommendations/comments use this so either can be collapsed to make
@@ -2953,18 +2949,8 @@
     retryUntilActive(0);
   }
 
-  // Shorts: experimental. Docks the comments engagement panel beside the
-  // player instead of as a modal overlay, when it happens to be open.
-  // CSS-only (no DOM moves — Shorts' reel/swipe behavior is more fragile
-  // to touch), scoped to a separate class, and a pure no-op if the
-  // expected panel isn't present, so it can't break Shorts playback.
-  function applyShortsClass() {
-    document.documentElement.classList.toggle("yt-shorts-split-active", isShortsPage());
-  }
-
   function onNavigateFinish() {
     start();
-    applyShortsClass();
     maybeClaimMain();
   }
 

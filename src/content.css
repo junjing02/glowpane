@@ -1326,34 +1326,6 @@ html.yt-split-active:has(#yt-split-comments-pane.yt-split-pane-collapsed) #yt-sp
    used to live here — removed, since most of this project's edge-case
    bugs came from making every rule here also work at that second size. */
 
-/* Shorts: experimental. Docks the comments engagement panel beside the
-   player instead of as a modal overlay, when it happens to be open.
-   CSS-only (no DOM moves — Shorts' vertical swipe/reel behavior is more
-   fragile to touch than the regular watch page), and a pure no-op if the
-   expected panel isn't present, so it can't break Shorts playback. */
-html.yt-shorts-split-active
-  ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-comments-section"] {
-  position: fixed !important;
-  top: var(--ytd-masthead-height, 56px) !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  left: auto !important;
-  transform: none !important;
-  width: min(400px, 32vw) !important;
-  min-width: 300px !important;
-  height: auto !important;
-  max-height: none !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  border-left: 1px solid var(--split-border) !important;
-  background: var(--split-bg) !important;
-}
-
-html.yt-shorts-split-active tp-yt-iron-overlay-backdrop {
-  display: none !important;
-}
-
-
 /* Keyboard focus on our own controls (dividers and pane titles are
    reachable with Tab; a mouse click never focuses them). */
 html.yt-split-active #yt-split-resizer:focus-visible,
