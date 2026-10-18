@@ -73,21 +73,37 @@ document.addEventListener("ytsplit:set-playback-rate", (e) => {
     }
   }
 
-  // Back on the tab: close the window this code opened, so the video is back
-  // in the page (Chrome usually does this itself; this covers the rest).
+  // Back on the tab: Chrome closes an automatic picture-in-picture window
+  // itself. Closing it from here at the same moment left the video stuck
+  // (reported: exitPictureInPicture() never settled, no leave event, the
+  // page kept showing "Playing in picture-in-picture"). So only close it if
+  // Chrome hasn't after a second, and only if this code opened it.
+  let closeTimer = 0;
   document.addEventListener("visibilitychange", () => {
     log("tab", document.visibilityState, "open now:", describe(document.pictureInPictureElement), "ours:", describe(autoOpened));
+    clearTimeout(closeTimer);
     if (document.visibilityState !== "visible" || !autoOpened) return;
     const video = autoOpened;
-    autoOpened = null;
-    if (document.pictureInPictureElement === video) {
+    closeTimer = setTimeout(() => {
+      log("1s later, open now:", describe(document.pictureInPictureElement));
+      if (document.visibilityState !== "visible" || autoOpened !== video) return;
+      autoOpened = null;
+      if (document.pictureInPictureElement !== video) return;
       document.exitPictureInPicture().then(
         () => log("closed it"),
         (err) => log("close failed:", err && err.message)
       );
-    }
-    setTimeout(() => log("1s later, open now:", describe(document.pictureInPictureElement)), 1000);
+    }, 1000);
   });
+
+  // Forget the window once it closes, however it closed.
+  document.addEventListener(
+    "leavepictureinpicture",
+    (e) => {
+      if (e.target === autoOpened) autoOpened = null;
+    },
+    true
+  );
 
   document.addEventListener("ytsplit:auto-pip", sync);
   sync();
