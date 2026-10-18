@@ -21,6 +21,17 @@ document.addEventListener("ytsplit:set-playback-rate", (e) => {
   let registered = false;
   let autoOpened = null; // the <video> this code put in picture-in-picture
 
+  // TEMPORARY log while the "video missing after coming back" report is
+  // diagnosed. Remove before release.
+  const log = (...args) => console.info("[Glowpane PiP]", ...args);
+  const describe = (video) =>
+    video
+      ? `${video.className || "video"} ${video.videoWidth}x${video.videoHeight} paused=${video.paused} connected=${video.isConnected}`
+      : "none";
+  for (const type of ["enterpictureinpicture", "leavepictureinpicture"]) {
+    document.addEventListener(type, (e) => log(type, describe(e.target)), true);
+  }
+
   // The playing video with the biggest box: the watch page's player, or the
   // Short in view (the reel keeps several <video> elements).
   function playingVideo() {
@@ -40,10 +51,12 @@ document.addEventListener("ytsplit:set-playback-rate", (e) => {
 
   async function enter() {
     const video = playingVideo();
+    log("Chrome asked to open. videos:", document.querySelectorAll("video").length, "picked:", describe(video), "already open:", describe(document.pictureInPictureElement));
     if (!video || document.pictureInPictureElement) return;
     try {
       await video.requestPictureInPicture();
       autoOpened = video;
+      log("opened");
     } catch (err) {
       console.debug("[Glowpane] auto picture-in-picture refused:", err && err.message);
     }
@@ -63,10 +76,17 @@ document.addEventListener("ytsplit:set-playback-rate", (e) => {
   // Back on the tab: close the window this code opened, so the video is back
   // in the page (Chrome usually does this itself; this covers the rest).
   document.addEventListener("visibilitychange", () => {
+    log("tab", document.visibilityState, "open now:", describe(document.pictureInPictureElement), "ours:", describe(autoOpened));
     if (document.visibilityState !== "visible" || !autoOpened) return;
     const video = autoOpened;
     autoOpened = null;
-    if (document.pictureInPictureElement === video) document.exitPictureInPicture().catch(() => {});
+    if (document.pictureInPictureElement === video) {
+      document.exitPictureInPicture().then(
+        () => log("closed it"),
+        (err) => log("close failed:", err && err.message)
+      );
+    }
+    setTimeout(() => log("1s later, open now:", describe(document.pictureInPictureElement)), 1000);
   });
 
   document.addEventListener("ytsplit:auto-pip", sync);
