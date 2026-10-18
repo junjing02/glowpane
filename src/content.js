@@ -29,6 +29,7 @@
     paneTransparency: 40, // 0 = solid panes, 100 = fully see-through
     rememberLayout: false,
     videoOnRight: false,
+    autoPip: false, // picture-in-picture when switching tabs (page.js)
   };
   let settings = { ...DEFAULT_SETTINGS };
   // "Side pane width" presets: the side pane's default share of the layout.
@@ -1609,13 +1610,10 @@
   // not the manifest version, so small fixes don't nag. New installs get
   // the first-run hint only: dismissing it marks this note seen too.
   const WHATS_NEW = {
-    version: "1.9",
+    version: "1.12",
     tips: [
-      "Ambient light now works in YouTube's light theme too, with its own strength.",
-      "Video only: press Alt+Shift+V, or drag the main divider to the window edge. Click the strip at that edge to bring the side pane back.",
-      "One pane at a time: a new setting that gives Recommended or Comments the whole side pane.",
-      "Hide the description, Recommended or Comments for good in the settings.",
-      "Pick a default side pane width, and how see-through the panes are.",
+      "Picture-in-picture on tab switch: turn it on, and a playing video floats in a small window while you use another tab.",
+      "Ambient light now glows behind Shorts too, and the Shorts comments panel turns see-through.",
       "Find these under the extension's toolbar icon.",
     ],
   };
@@ -3187,6 +3185,7 @@
     if (role !== "companion") document.documentElement.classList.remove("yt-split-early-companion");
     if (role === windowRole) return;
     windowRole = role;
+    applyAutoPip();
     if (isWatchPage()) start();
     else teardownLayout();
   }
@@ -3344,6 +3343,18 @@
     document.documentElement.style.setProperty("--split-pane-alpha", String(1 - transparency / 100));
   }
 
+  // Auto picture-in-picture lives in page.js (the media session action must
+  // be set in the page's own world). This tells it whether it's wanted, via
+  // an attribute both worlds can read. Never in the paused second window.
+  function applyAutoPip() {
+    const on = settings.splitEnabled && settings.autoPip && windowRole !== "companion";
+    const value = on ? "on" : "off";
+    const html = document.documentElement;
+    if (html.dataset.ytsplitAutoPip === value) return;
+    html.dataset.ytsplitAutoPip = value;
+    document.dispatchEvent(new CustomEvent("ytsplit:auto-pip"));
+  }
+
   try {
     chrome.storage.local.get({ ...DEFAULT_SETTINGS, savedLayout: null, welcomeSeen: false, seenVersion: null, videosSeen: 0, rateAsked: false }).then((stored) => {
       for (const key of Object.keys(DEFAULT_SETTINGS)) settings[key] = stored[key];
@@ -3355,6 +3366,7 @@
       storageLoaded = true;
       applyAmbientSettings();
       applyPaneTransparency();
+      applyAutoPip();
       if (isWatchPage()) start();
     });
     chrome.storage.onChanged.addListener((changes, area) => {
@@ -3376,6 +3388,7 @@
       }
       if (changes.ambientEnabled || changes.ambientStrength || changes.ambientStrengthLight) applyAmbientSettings();
       if (changes.paneTransparency) applyPaneTransparency();
+      if (changes.autoPip || changes.splitEnabled) applyAutoPip();
       // Applied in place (no start()), so a dragged divider survives.
       const paneChange =
         changes.showDescription || changes.showRecommendations || changes.showComments || changes.onePaneAtATime;
