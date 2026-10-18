@@ -29,7 +29,6 @@
     paneTransparency: 40, // 0 = solid panes, 100 = fully see-through
     rememberLayout: false,
     videoOnRight: false,
-    autoPip: false, // picture-in-picture when switching tabs (page.js)
   };
   let settings = { ...DEFAULT_SETTINGS };
   // "Side pane width" presets: the side pane's default share of the layout.
@@ -1515,6 +1514,79 @@
     return best;
   }
 
+  // ---- Picture-in-picture ----
+  // A button in the player's control bar and the Alt+Shift+P shortcut
+  // (background.js runs glowpaneTogglePip() in this world through
+  // chrome.scripting, which carries the key press as a user gesture).
+  // Chrome only opens picture-in-picture from a click or a key press.
+  const PIP_BUTTON_ID = "yt-split-pip-button";
+  const SVG_NS = "http://www.w3.org/2000/svg";
+
+  function pipVideo() {
+    if (isShortsPage()) {
+      const found = findShortsVideo();
+      return found ? found.video : null;
+    }
+    const video = watchRoot().querySelector("#movie_player video");
+    return video && video.readyState >= 1 ? video : null;
+  }
+
+  function togglePictureInPicture() {
+    if (document.pictureInPictureElement) {
+      document.exitPictureInPicture().catch(() => {});
+      return;
+    }
+    const video = settings.splitEnabled && windowRole !== "companion" ? pipVideo() : null;
+    if (!video) return;
+    video.requestPictureInPicture().catch((err) => {
+      console.info("[Glowpane] picture-in-picture refused:", err && err.message);
+    });
+  }
+  globalThis.glowpaneTogglePip = togglePictureInPicture;
+
+  // Built with createElementNS: YouTube enforces Trusted Types (no innerHTML).
+  function buildPipButton() {
+    const button = document.createElement("button");
+    button.id = PIP_BUTTON_ID;
+    button.className = "ytp-button";
+    button.setAttribute("aria-label", "Picture-in-picture (Alt+Shift+P)");
+    button.title = "Picture-in-picture (Alt+Shift+P)";
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("width", "24");
+    svg.setAttribute("height", "24");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("fill", "white");
+    path.setAttribute(
+      "d",
+      "M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z"
+    );
+    svg.appendChild(path);
+    button.appendChild(svg);
+    // No focus on a mouse click, so the spacebar still plays/pauses.
+    button.addEventListener("mousedown", (e) => e.preventDefault());
+    button.addEventListener("click", (e) => {
+      e.stopPropagation();
+      togglePictureInPicture();
+    });
+    return button;
+  }
+
+  // Called by the 500ms watchdog: keeps the button just before the player's
+  // settings button on watch pages, and removes it when it shouldn't show.
+  function updatePipButton() {
+    const wanted =
+      settings.splitEnabled && windowRole !== "companion" && isWatchPage() && document.pictureInPictureEnabled;
+    const settingsButton = wanted ? watchRoot().querySelector("#movie_player .ytp-right-controls .ytp-settings-button") : null;
+    let button = document.getElementById(PIP_BUTTON_ID);
+    if (!settingsButton) {
+      if (button) button.remove();
+      return;
+    }
+    if (!button) button = buildPipButton();
+    if (button.nextElementSibling !== settingsButton) settingsButton.before(button);
+  }
+
   function updateShortsGlow() {
     const html = document.documentElement;
     const host = isShortsPage() ? shortsHost() : null;
@@ -1612,9 +1684,8 @@
   const WHATS_NEW = {
     version: "1.12",
     tips: [
-      "Picture-in-picture on tab switch: turn it on, and a playing video floats in a small window while you use another tab.",
+      "Picture-in-picture: click the new button in the player, or press Alt+Shift+P, and the video floats in a small window on top of everything.",
       "Ambient light now glows behind Shorts too, and the Shorts comments panel turns see-through.",
-      "Find these under the extension's toolbar icon.",
     ],
   };
 
@@ -3150,6 +3221,7 @@
     }
     watchdogWasWatching = watching;
     updateShortsGlow();
+    updatePipButton();
   }, 500);
 
   // Back/forward-button navigation doesn't always fire YouTube's own
@@ -3185,7 +3257,6 @@
     if (role !== "companion") document.documentElement.classList.remove("yt-split-early-companion");
     if (role === windowRole) return;
     windowRole = role;
-    applyAutoPip();
     if (isWatchPage()) start();
     else teardownLayout();
   }
@@ -3343,18 +3414,6 @@
     document.documentElement.style.setProperty("--split-pane-alpha", String(1 - transparency / 100));
   }
 
-  // Auto picture-in-picture lives in page.js (the media session action must
-  // be set in the page's own world). This tells it whether it's wanted, via
-  // an attribute both worlds can read. Never in the paused second window.
-  function applyAutoPip() {
-    const on = settings.splitEnabled && settings.autoPip && windowRole !== "companion";
-    const value = on ? "on" : "off";
-    const html = document.documentElement;
-    if (html.dataset.ytsplitAutoPip === value) return;
-    html.dataset.ytsplitAutoPip = value;
-    document.dispatchEvent(new CustomEvent("ytsplit:auto-pip"));
-  }
-
   try {
     chrome.storage.local.get({ ...DEFAULT_SETTINGS, savedLayout: null, welcomeSeen: false, seenVersion: null, videosSeen: 0, rateAsked: false }).then((stored) => {
       for (const key of Object.keys(DEFAULT_SETTINGS)) settings[key] = stored[key];
@@ -3366,7 +3425,6 @@
       storageLoaded = true;
       applyAmbientSettings();
       applyPaneTransparency();
-      applyAutoPip();
       if (isWatchPage()) start();
     });
     chrome.storage.onChanged.addListener((changes, area) => {
@@ -3388,7 +3446,6 @@
       }
       if (changes.ambientEnabled || changes.ambientStrength || changes.ambientStrengthLight) applyAmbientSettings();
       if (changes.paneTransparency) applyPaneTransparency();
-      if (changes.autoPip || changes.splitEnabled) applyAutoPip();
       // Applied in place (no start()), so a dragged divider survives.
       const paneChange =
         changes.showDescription || changes.showRecommendations || changes.showComments || changes.onePaneAtATime;

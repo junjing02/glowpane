@@ -15,7 +15,6 @@ const DEFAULTS = {
   paneTransparency: 40,
   rememberLayout: false,
   videoOnRight: false,
-  autoPip: false,
 };
 
 const controls = Object.fromEntries(Object.keys(DEFAULTS).map((key) => [key, document.getElementById(key)]));

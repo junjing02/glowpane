@@ -279,7 +279,42 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
 // chrome://extensions/shortcuts). Two of them only flip the stored settings; the
 // tabs and the handlers above react to the storage change, exactly as if
 // the toolbar panel's switches had been used.
+// Runs in the tab (content.js's world), so it must be self-contained.
+// content.js normally provides glowpaneTogglePip(); the fallback covers a
+// tab whose content script isn't there.
+function togglePipInTab() {
+  if (typeof globalThis.glowpaneTogglePip === "function") {
+    globalThis.glowpaneTogglePip();
+    return;
+  }
+  if (document.pictureInPictureElement) {
+    document.exitPictureInPicture().catch(() => {});
+    return;
+  }
+  let best = null;
+  let bestArea = 0;
+  for (const video of document.querySelectorAll("video")) {
+    const rect = video.getBoundingClientRect();
+    const visible =
+      Math.max(0, Math.min(rect.right, innerWidth) - Math.max(rect.left, 0)) *
+      Math.max(0, Math.min(rect.bottom, innerHeight) - Math.max(rect.top, 0));
+    if (video.readyState >= 1 && visible > bestArea) {
+      best = video;
+      bestArea = visible;
+    }
+  }
+  if (best) best.requestPictureInPicture().catch(() => {});
+}
+
 chrome.commands.onCommand.addListener(async (command, tab) => {
+  // Picture-in-picture needs a user gesture in the page. A command counts as
+  // one, so the script is injected right away, before any await.
+  if (command === "toggle-pip") {
+    if (tab && tab.id != null && isYouTubeUrl(tab.url)) {
+      chrome.scripting.executeScript({ target: { tabId: tab.id }, func: togglePipInTab }).catch(() => {});
+    }
+    return;
+  }
   // Video only is a per-tab view, not a stored setting: ask the tab in
   // front to hide or show its side pane.
   if (command === "toggle-video-only") {

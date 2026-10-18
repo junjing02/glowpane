@@ -49,6 +49,12 @@
         "default": "Alt+Shift+V"
       },
       "description": "Hide or show the side pane (video only)"
+    },
+    "toggle-pip": {
+      "suggested_key": {
+        "default": "Alt+Shift+P"
+      },
+      "description": "Open or close picture-in-picture"
     }
   },
   "content_scripts": [
