@@ -457,6 +457,10 @@ html.yt-split-active #primary-inner {
 html.yt-split-active #player-container-outer {
   flex: 0 0 auto !important;
   width: 100% !important;
+  /* YouTube gives it min-width: 640px in small windows, wider than the
+     video column there (see minVideoWidthFor in content.js); the grid's
+     own minimum protects the video instead. */
+  min-width: 0 !important;
   /* We deliberately don't force the player's own width/height/position
      beyond the column's width — it sizes itself the same way it does on
      normal YouTube. Forcing more than that previously broke its controls

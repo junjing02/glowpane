@@ -319,8 +319,20 @@
   // formula as the single source of truth for both is what makes them
   // consistent instead of two independent numbers that could drift apart.
   function minVideoWidthFor(ratio) {
-    return Math.max(MIN_VIDEO_WIDTH, MIN_VIDEO_HEIGHT * ratio, playerMinWidth);
+    const floor = Math.max(MIN_VIDEO_WIDTH, MIN_VIDEO_HEIGHT * ratio, playerMinWidth);
+    return Math.max(SMALL_WINDOW_MIN_VIDEO_WIDTH, Math.min(floor, videoFloorCap));
   }
+
+  // In a smaller window (still above the activation threshold) the floors
+  // above plus the side pane's own minimum can add up to more than the
+  // window: 640px (360px tall at 16:9, and YouTube's own small-window
+  // player min-width) + 400px + gaps ≈ 1055px, so a 1015px window was cut
+  // off at both edges (reported, measured in DevTools). The video floor
+  // yields first: at most what's left after the side pane's minimum, never
+  // below SMALL_WINDOW_MIN_VIDEO_WIDTH. Set by constrainVideoSize();
+  // content.css lifts YouTube's player min-width so the player follows.
+  const SMALL_WINDOW_MIN_VIDEO_WIDTH = 320;
+  let videoFloorCap = Infinity;
 
   // YouTube's own stylesheet can give #player-container-outer a min-width
   // of its own (content.css doesn't override it). If that's larger than
@@ -2627,6 +2639,11 @@
     // when #primary-inner's height happens to be measurable that moment.
     const ratio = measureVideoAspectRatio();
     playerMinWidth = measurePlayerMinWidth();
+    const columnsForCap = watchRoot().querySelector("#columns");
+    videoFloorCap =
+      columnsForCap && columnsForCap.clientWidth > 0
+        ? columnsForCap.clientWidth - MIN_SIDE_WIDTH - LAYOUT_OVERHEAD
+        : Infinity;
     document.documentElement.style.setProperty(VIDEO_RATIO_VAR, String(ratio));
     document.documentElement.style.setProperty(VIDEO_MIN_WIDTH_VAR, minVideoWidthFor(ratio) + "px");
 
