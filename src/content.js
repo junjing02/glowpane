@@ -2414,7 +2414,12 @@
     if (secondaryShown) {
       if (!secondary.contains(results)) (secondary.querySelector("#secondary-inner") || secondary).appendChild(unit);
     } else if (below && !below.contains(results)) {
-      below.appendChild(unit);
+      // YouTube's one-column layout shows Recommended above the comments
+      // (reported: ours came after them), so go just before #comments when
+      // it's in #below, else at the end.
+      const comments = below.querySelector("#comments");
+      if (comments) comments.before(unit);
+      else below.appendChild(unit);
     }
   }
 
