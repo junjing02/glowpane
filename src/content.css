@@ -398,9 +398,12 @@ html.yt-split-active.yt-split-companion #yt-split-side-pane {
   grid-column: 1 !important;
 }
 
-/* YouTube's narrow layout (the pop-up is a narrow window) can hide
-   #secondary; it must stay visible as the Recommended pane. */
-html.yt-split-active.yt-split-companion #secondary {
+/* YouTube's one-column layout (the pop-up, and smaller normal windows
+   that are still above our activation threshold) hides #secondary; it
+   must stay visible as the Recommended pane. It was pop-up only, so in a
+   smaller normal window Recommended disappeared (reported). The "Show
+   recommendations" off rule still wins (higher specificity). */
+html.yt-split-active #secondary {
   display: block !important;
 }
 
@@ -1276,6 +1279,8 @@ html.yt-split-active ytd-compact-video-renderer,
 html.yt-split-active ytd-compact-radio-renderer,
 html.yt-split-active ytd-compact-playlist-renderer,
 html.yt-split-active ytd-compact-movie-renderer,
+html.yt-split-active ytd-watch-next-secondary-results-renderer,
+html.yt-split-active yt-lockup-view-model,
 html.yt-split-active ytd-item-section-renderer,
 html.yt-split-active ytd-comments-header-renderer,
 html.yt-split-active ytd-comment-thread-renderer,
