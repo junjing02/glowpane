@@ -2376,6 +2376,30 @@
     nudgePlayerResize();
   }
 
+  // Before our panes are deleted: YouTube's one-column layout puts the
+  // recommendations list right after #below, which (with the split on) is
+  // inside our description pane. ensureLayout() moved it back to
+  // #secondary, recording that pane as its original place, so
+  // restoreMovedNodes() put it back INTO our pane, and removing the side
+  // pane then deleted it: no recommendations in YouTube's own layout, and
+  // an empty Recommended pane after widening again, until the next page
+  // load (reported; a DevTools report found no #related anywhere). Move it
+  // out to YouTube's #secondary first; placeRelatedNatively() then puts it
+  // where YouTube's current layout wants it.
+  function rescueRelatedList() {
+    const sidePane = document.getElementById("yt-split-side-pane");
+    if (!sidePane) return;
+    const root = watchRoot();
+    const secondary = [...root.querySelectorAll("#secondary")].find((el) => !sidePane.contains(el));
+    const below = [...root.querySelectorAll("#below")].find((el) => !sidePane.contains(el));
+    const target = secondary ? secondary.querySelector("#secondary-inner") || secondary : below;
+    if (!target) return;
+    sidePane.querySelectorAll("ytd-watch-next-secondary-results-renderer").forEach((results) => {
+      const unit = results.parentElement && results.parentElement.id === "related" ? results.parentElement : results;
+      if (sidePane.contains(unit)) target.appendChild(unit);
+    });
+  }
+
   function placeRelatedNatively() {
     const root = watchRoot();
     if (root === document || !isWatchPage() || root.getClientRects().length === 0) return;
@@ -2423,6 +2447,7 @@
     restoreMovedNodes();
     restoreWidenedAncestors();
     returnPlayerToYouTube();
+    rescueRelatedList();
 
     // Every #secondary, not just the first in the document: the home page
     // has one too, and ours may not be first.
