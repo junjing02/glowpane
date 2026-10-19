@@ -2170,6 +2170,7 @@
       return;
     }
 
+    reclaimPlayer();
     const columns = watchRoot().querySelector("#columns");
     const secondary = findBestById(
       "secondary",
@@ -2317,6 +2318,52 @@
   // two-column layouts while the split was on, and it only moves the list
   // itself at the moment of such a switch. Reported: recommendations
   // missing in YouTube's own layout after narrowing the window.
+  // YouTube's one-column layout (ytd-watch-flexy[is-single-column]
+  // [full-bleed-player], in windows still wide enough for the split)
+  // moves #player-container out of #primary into #full-bleed-container,
+  // above #columns (confirmed by a DevTools report). The split then had an
+  // empty video column, the video across the top, and the ambient glow
+  // painted over it. This puts it back in #player-container-inner, its
+  // two-column home. Not through moveNode(): YouTube may move it again
+  // while the split is on, so teardown decides from YouTube's state at that
+  // moment (returnPlayerToYouTube()), not from a stale record. Skipped in
+  // fullscreen (YouTube lays the player out full-bleed there) and in the
+  // pop-up, whose player is hidden anyway.
+  let reclaimedPlayer = null; // { node, parent, next } where YouTube had it
+  // Moves per video. If YouTube keeps taking the player back, stop after a
+  // few rather than fight it in a loop; reset in start().
+  let reclaimCount = 0;
+  const MAX_RECLAIMS = 8;
+
+  function reclaimPlayer() {
+    if (windowRole === "companion") return;
+    const root = watchRoot();
+    if (root === document || root.hasAttribute("fullscreen") || document.fullscreenElement) return;
+    const container = root.querySelector("#player-container");
+    const inner = root.querySelector("#player-container-inner");
+    const fullBleed = root.querySelector("#full-bleed-container");
+    if (!container || !inner || !fullBleed || !fullBleed.contains(container)) return;
+    if (reclaimCount >= MAX_RECLAIMS) return;
+    reclaimCount++;
+    reclaimedPlayer = { node: container, parent: container.parentElement, next: container.nextSibling };
+    inner.appendChild(container);
+    nudgePlayerResize();
+  }
+
+  function returnPlayerToYouTube() {
+    const record = reclaimedPlayer;
+    reclaimedPlayer = null;
+    if (!record || !record.node.isConnected || !record.parent.isConnected) return;
+    const root = watchRoot();
+    // Back where YouTube keeps it only while its own layout is still the
+    // full-bleed one; otherwise #player-container-inner is already right.
+    if (root === document || !root.hasAttribute("full-bleed-player")) return;
+    if (record.node.parentElement === record.parent) return;
+    if (record.next && record.next.parentElement === record.parent) record.parent.insertBefore(record.node, record.next);
+    else record.parent.appendChild(record.node);
+    nudgePlayerResize();
+  }
+
   function placeRelatedNatively() {
     const root = watchRoot();
     if (root === document || !isWatchPage() || root.getClientRects().length === 0) return;
@@ -2363,6 +2410,7 @@
 
     restoreMovedNodes();
     restoreWidenedAncestors();
+    returnPlayerToYouTube();
 
     // Every #secondary, not just the first in the document: the home page
     // has one too, and ours may not be first.
@@ -2871,6 +2919,7 @@
 
   function start() {
     const myGeneration = ++navGeneration;
+    reclaimCount = 0;
 
     if (observer) observer.disconnect();
     if (observerDebounceTimer) {
@@ -3217,6 +3266,7 @@
       // the pane sometimes didn't widen when a video ended). A no-op once
       // bound.
       setupVideoEndedHandling();
+      reclaimPlayer();
       checkLayoutHealth();
     }
     watchdogWasWatching = watching;

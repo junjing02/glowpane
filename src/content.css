@@ -241,6 +241,21 @@ html.yt-split-active #cinematics-full-bleed-container {
   visibility: hidden !important;
 }
 
+/* YouTube's one-column layout: content.js (reclaimPlayer) moves the
+   player back into #primary, but YouTube's [full-bleed-player] styles hide
+   #player there (it measured 0x0) and keep #full-bleed-container's height
+   above #columns. Show the player boxes again while they hold the player,
+   and hide the emptied full-bleed box. Fullscreen and the pop-up are left
+   to their own rules. */
+html.yt-split-active:not(.yt-split-companion) ytd-watch-flexy[full-bleed-player]:not([fullscreen]) #primary #player:has(#movie_player),
+html.yt-split-active:not(.yt-split-companion) ytd-watch-flexy[full-bleed-player]:not([fullscreen]) #primary #player-container-outer:has(#movie_player) {
+  display: block !important;
+}
+
+html.yt-split-active ytd-watch-flexy[full-bleed-player]:not([fullscreen]) #full-bleed-container:not(:has(#movie_player)) {
+  display: none !important;
+}
+
 /* position: fixed + z-index: -1 inside #columns' own stacking context
    (isolation above): covers the whole window, above YouTube's page
    background, below the video and panes (the translucent panes let it
