@@ -91,6 +91,9 @@
   // The list panes that were open before the
   // description was opened, to open again when it closes.
   let descRestore = null;
+  // The description pane starts open (pop-up, remembered layout): open
+  // YouTube's own "...more" too, once its description is there.
+  let descAutoExpand = false;
 
   // Recommendations/comments collapsed state — same in-memory-only, reset-
   // every-navigation pattern as descExpanded just above (this used to be
@@ -285,6 +288,21 @@
     if (!shownListPanes().some((pane) => !pane.classList.contains("yt-split-pane-collapsed"))) return;
     setDescExpanded(desc, false);
     descRestore = null;
+  }
+
+  // Opens YouTube's own "...more" in the description, so the whole text
+  // shows when our description pane opens. Returns false while the
+  // description isn't there yet. "Show less" stays YouTube's: we never
+  // click it, since collapsing can make YouTube scroll the page.
+  function expandYouTubeDescription() {
+    const expander = document.querySelector("#yt-split-desc-body #description-inline-expander");
+    if (!expander) return false;
+    const less = expander.querySelector("#collapse");
+    if (less && !less.hidden) return true;
+    const more = expander.querySelector("#expand");
+    if (!more) return false;
+    if (!more.hidden && more.getClientRects().length) more.click();
+    return true;
   }
 
   // Recommended (or live chat) and Comments, when they are on screen.
@@ -971,6 +989,7 @@
         const expanded = !pane.classList.contains("yt-split-desc-expanded");
         setDescExpanded(pane, expanded);
         syncDescPane(expanded);
+        if (expanded) expandYouTubeDescription();
       });
       pane.appendChild(header);
     }
@@ -2265,6 +2284,7 @@
     // column entirely and into a small collapsible section here.
     const below = primary.querySelector("#below") || watchRoot().querySelector("#below");
     ensureDescPane(sidePane, below);
+    if (descAutoExpand && descExpanded && expandYouTubeDescription()) descAutoExpand = false;
 
     ensurePaneHeader(secondary, hasLiveChat(secondary) ? "Live Chat" : "Recommended", {
       collapsed: secondaryCollapsed,
@@ -3128,6 +3148,7 @@
       commentsCollapsed = !!savedLayout.commentsCollapsed;
       descExpanded = !!savedLayout.descExpanded;
     }
+    descAutoExpand = descExpanded;
 
     // Wrapped: an uncaught exception anywhere in this initial pass (a null
     // reference against some not-yet-settled part of the DOM right at SPA
