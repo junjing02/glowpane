@@ -722,6 +722,26 @@ html.yt-split-active #yt-split-desc-pane.yt-split-desc-expanded #yt-split-desc-b
   padding: 0 16px 16px;
 }
 
+/* Recommended and Comments both closed (content.js updateDescFill): an
+   expanded description takes all the free height of the side pane, and
+   scrolls inside it, instead of stopping at the cap above. */
+html.yt-split-active.yt-split-desc-fill #yt-split-desc-pane.yt-split-desc-expanded {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+html.yt-split-active.yt-split-desc-fill #yt-split-desc-pane.yt-split-desc-expanded .yt-split-desc-header {
+  flex-shrink: 0;
+}
+
+html.yt-split-active.yt-split-desc-fill #yt-split-desc-pane.yt-split-desc-expanded #yt-split-desc-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+
 html.yt-split-active #yt-split-desc-body::-webkit-scrollbar {
   width: 8px;
 }

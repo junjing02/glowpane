@@ -37,6 +37,10 @@
   const HIDE_DESC_CLASS = "yt-split-hide-desc";
   const HIDE_RECS_CLASS = "yt-split-hide-recs";
   const HIDE_COMMENTS_CLASS = "yt-split-hide-comments";
+  // Set while neither Recommended nor Comments is open (collapsed, hidden
+  // in the settings, or absent), so an expanded description can fill the
+  // side pane instead of stopping at its normal height cap.
+  const DESC_FILL_CLASS = "yt-split-desc-fill";
   // What "Remember my layout" last saved: { sideRatio, topHeight,
   // secondaryCollapsed, commentsCollapsed, descExpanded }, or null.
   let savedLayout = null;
@@ -216,6 +220,7 @@
           options.onToggle(collapsed);
           header.setAttribute("aria-expanded", String(!collapsed));
           syncOnePane(container);
+          updateDescFill();
         };
         // Keyboard and screen-reader access: a focusable "button" that
         // Enter/Space toggle. A mouse click must NOT move focus onto it
@@ -255,6 +260,17 @@
     if (header) header.setAttribute("aria-expanded", String(!collapsed));
     if (pane.id === "yt-split-comments-pane") commentsCollapsed = collapsed;
     else secondaryCollapsed = collapsed;
+    updateDescFill();
+  }
+
+  function updateDescFill() {
+    const isOpen = (pane) =>
+      !!pane &&
+      !pane.classList.contains("yt-split-pane-collapsed") &&
+      getComputedStyle(pane).display !== "none";
+    const secondary = document.querySelector("#yt-split-side-pane > #secondary");
+    const commentsPane = document.getElementById("yt-split-comments-pane");
+    document.documentElement.classList.toggle(DESC_FILL_CLASS, !isOpen(secondary) && !isOpen(commentsPane));
   }
 
   // changed: the pane whose title was just clicked (the other one takes
@@ -2298,6 +2314,7 @@
     repairSubscribeButtons();
     applyHiddenPanes();
     syncOnePane();
+    updateDescFill();
     observeSidePane(sidePane);
     updateWideSide();
     maybeShowWelcome();
@@ -2432,7 +2449,8 @@
       HIDE_DESC_CLASS,
       HIDE_RECS_CLASS,
       HIDE_COMMENTS_CLASS,
-      WIDE_SIDE_CLASS
+      WIDE_SIDE_CLASS,
+      DESC_FILL_CLASS
     );
     hideWelcome();
     if (sidePaneObserver) sidePaneObserver.disconnect();
