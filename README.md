@@ -57,7 +57,7 @@ Click the extension's toolbar icon and switch on **Two windows**. The video fill
 
 ## Settings and shortcuts
 
-Click the extension's toolbar icon for the settings: the split itself, Two windows, ambient light and its strength in each theme, **Show description**, **Show recommendations**, **Show comments** (switch off all three and the video fills the window), **One pane at a time**, **Side pane width**, **Transparency**, **Remember my layout**, and **Video on the right**.
+Click the extension's toolbar icon for the settings: the split itself, Two windows, ambient light and its strength in each theme, **Show description**, **Show recommendations**, **Show comments** (switch off all three and the video fills the window), **Side pane width**, **Transparency**, **Remember my layout**, and **Video on the right**.
 
 - `Alt+Shift+S` turns the split on or off, `Alt+Shift+W` toggles Two windows, `Alt+Shift+V` hides or shows the side pane (video only), and `Alt+Shift+P` opens or closes picture-in-picture. Change them at `chrome://extensions/shortcuts`.
 - Picture-in-picture: click the button next to the player's settings icon (or press `Alt+Shift+P`), and the video floats in a small window on top of your other apps. It works on Shorts too, with the shortcut.

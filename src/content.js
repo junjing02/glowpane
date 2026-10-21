@@ -24,7 +24,6 @@
     showDescription: true,
     showRecommendations: true,
     showComments: true,
-    onePaneAtATime: true, // only one of Description / Recommended / Comments open
     sideWidth: "auto", // or a SIDE_WIDTH_PRESETS key
     paneTransparency: 40, // 0 = solid panes, 100 = fully see-through
     rememberLayout: false,
@@ -89,7 +88,7 @@
   // does. Reset in start() on every navigation, same pattern as
   // hasManualSideWidth/inRecsFocusMode above.
   let descExpanded = false;
-  // "One pane at a time": the list panes that were open before the
+  // The list panes that were open before the
   // description was opened, to open again when it closes.
   let descRestore = null;
 
@@ -222,7 +221,7 @@
           container.classList.toggle("yt-split-pane-collapsed", collapsed);
           options.onToggle(collapsed);
           header.setAttribute("aria-expanded", String(!collapsed));
-          syncOnePane(container);
+          syncOnePane();
           updateDescFill();
         };
         // Keyboard and screen-reader access: a focusable "button" that
@@ -254,9 +253,8 @@
     if (options && options.collapsed) container.classList.add("yt-split-pane-collapsed");
   }
 
-  // "One pane at a time" setting: Recommended and Comments are never open
-  // together, so the open one gets the whole stack. It reuses the normal
-  // collapse (class + in-memory flag); nothing else changes.
+  // Collapses or opens Recommended / Comments (class, title state and the
+  // in-memory flag), for the description sync below.
   function setPaneCollapsed(pane, collapsed) {
     pane.classList.toggle("yt-split-pane-collapsed", collapsed);
     const header = pane.querySelector(":scope > .yt-split-pane-header");
@@ -276,38 +274,17 @@
     document.documentElement.classList.toggle(DESC_FILL_CLASS, !isOpen(secondary) && !isOpen(commentsPane));
   }
 
-  // changed: the pane whose title was just clicked (the other one takes
-  // the opposite state). Without it, e.g. from ensureLayout(): if both
-  // are open, Comments stays and Recommended closes; if both are closed,
-  // Comments opens. Skipped unless both panes are really showing (no
-  // comments on a live stream, or a pane hidden in the settings).
-  //
-  // The description takes part too (not in the pop-up, which has the
-  // room): opening it closes Recommended and Comments (syncDescPane), and
-  // opening one of them closes the description again.
-  function syncOnePane(changed) {
-    if (!settings.onePaneAtATime) return;
-    const isCollapsed = (pane) => pane.classList.contains("yt-split-pane-collapsed");
+  // The description and the list panes are never open together (not in
+  // the pop-up, which has the room): opening the description closes
+  // Recommended and Comments (syncDescPane), and an open list pane (title
+  // clicked, saved layout, video end) closes the description. Both list
+  // panes closed while the description is open is fine.
+  function syncOnePane() {
     const desc = descTakesPart();
-    if (desc && desc.classList.contains("yt-split-desc-expanded")) {
-      if (!shownListPanes().some((pane) => !isCollapsed(pane))) return;
-      setDescExpanded(desc, false);
-      descRestore = null;
-    }
-    const secondary = document.querySelector("#yt-split-side-pane > #secondary");
-    const commentsPane = document.getElementById("yt-split-comments-pane");
-    if (!secondary || !commentsPane) return;
-    if (getComputedStyle(secondary).display === "none" || getComputedStyle(commentsPane).display === "none") return;
-    if (changed === secondary || changed === commentsPane) {
-      const other = changed === secondary ? commentsPane : secondary;
-      if (isCollapsed(other) === isCollapsed(changed)) setPaneCollapsed(other, !isCollapsed(changed));
-    } else if (isCollapsed(secondary) === isCollapsed(commentsPane)) {
-      setPaneCollapsed(secondary, true);
-      setPaneCollapsed(commentsPane, false);
-    } else {
-      return;
-    }
-    saveLayout();
+    if (!desc || !desc.classList.contains("yt-split-desc-expanded")) return;
+    if (!shownListPanes().some((pane) => !pane.classList.contains("yt-split-pane-collapsed"))) return;
+    setDescExpanded(desc, false);
+    descRestore = null;
   }
 
   // Recommended (or live chat) and Comments, when they are on screen.
@@ -317,9 +294,9 @@
     return [secondary, commentsPane].filter((pane) => pane && getComputedStyle(pane).display !== "none");
   }
 
-  // The description pane, when "One pane at a time" applies to it.
+  // The description pane, when the sync above applies to it.
   function descTakesPart() {
-    if (!settings.onePaneAtATime || windowRole === "companion") return null;
+    if (windowRole === "companion") return null;
     const desc = document.getElementById("yt-split-desc-pane");
     if (!desc || getComputedStyle(desc).display === "none") return null;
     return desc;
@@ -338,7 +315,6 @@
     } else {
       if (descRestore) descRestore.forEach((pane) => pane.isConnected && setPaneCollapsed(pane, false));
       descRestore = null;
-      syncOnePane();
     }
     saveLayout();
   }
@@ -1760,7 +1736,7 @@
   const WHATS_NEW = {
     version: "1.12",
     tips: [
-      "Opening the description now closes Recommended and Comments, so it gets the whole pane. Close it and they come back. To keep them open, switch off One pane at a time.",
+      "Opening the description now closes Recommended and Comments, so it gets the whole pane. Close it and they come back.",
       "Picture-in-picture: click the new button in the player, or press Alt+Shift+P, and the video floats in a small window on top of everything.",
       "Ambient light now glows behind Shorts too, and the Shorts comments panel turns see-through.",
     ],
@@ -3616,7 +3592,7 @@
       if (changes.paneTransparency) applyPaneTransparency();
       // Applied in place (no start()), so a dragged divider survives.
       const paneChange =
-        changes.showDescription || changes.showRecommendations || changes.showComments || changes.onePaneAtATime;
+        changes.showDescription || changes.showRecommendations || changes.showComments;
       // Switching to or from video only changes the grid itself, so that
       // one does go through start(), to resize the video for its new column.
       const wasVideoOnly = windowRole === "none" && document.documentElement.classList.contains("yt-split-solo");
