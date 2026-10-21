@@ -24,7 +24,7 @@
     showDescription: true,
     showRecommendations: true,
     showComments: true,
-    onePaneAtATime: false, // Recommended and Comments never open together
+    onePaneAtATime: true, // only one of Description / Recommended / Comments open
     sideWidth: "auto", // or a SIDE_WIDTH_PRESETS key
     paneTransparency: 40, // 0 = solid panes, 100 = fully see-through
     rememberLayout: false,
@@ -89,6 +89,9 @@
   // does. Reset in start() on every navigation, same pattern as
   // hasManualSideWidth/inRecsFocusMode above.
   let descExpanded = false;
+  // "One pane at a time": the list panes that were open before the
+  // description was opened, to open again when it closes.
+  let descRestore = null;
 
   // Recommendations/comments collapsed state — same in-memory-only, reset-
   // every-navigation pattern as descExpanded just above (this used to be
@@ -278,13 +281,23 @@
   // are open, Comments stays and Recommended closes; if both are closed,
   // Comments opens. Skipped unless both panes are really showing (no
   // comments on a live stream, or a pane hidden in the settings).
+  //
+  // The description takes part too (not in the pop-up, which has the
+  // room): opening it closes Recommended and Comments (syncDescPane), and
+  // opening one of them closes the description again.
   function syncOnePane(changed) {
     if (!settings.onePaneAtATime) return;
+    const isCollapsed = (pane) => pane.classList.contains("yt-split-pane-collapsed");
+    const desc = descTakesPart();
+    if (desc && desc.classList.contains("yt-split-desc-expanded")) {
+      if (!shownListPanes().some((pane) => !isCollapsed(pane))) return;
+      setDescExpanded(desc, false);
+      descRestore = null;
+    }
     const secondary = document.querySelector("#yt-split-side-pane > #secondary");
     const commentsPane = document.getElementById("yt-split-comments-pane");
     if (!secondary || !commentsPane) return;
     if (getComputedStyle(secondary).display === "none" || getComputedStyle(commentsPane).display === "none") return;
-    const isCollapsed = (pane) => pane.classList.contains("yt-split-pane-collapsed");
     if (changed === secondary || changed === commentsPane) {
       const other = changed === secondary ? commentsPane : secondary;
       if (isCollapsed(other) === isCollapsed(changed)) setPaneCollapsed(other, !isCollapsed(changed));
@@ -293,6 +306,39 @@
       setPaneCollapsed(commentsPane, false);
     } else {
       return;
+    }
+    saveLayout();
+  }
+
+  // Recommended (or live chat) and Comments, when they are on screen.
+  function shownListPanes() {
+    const secondary = document.querySelector("#yt-split-side-pane > #secondary");
+    const commentsPane = document.getElementById("yt-split-comments-pane");
+    return [secondary, commentsPane].filter((pane) => pane && getComputedStyle(pane).display !== "none");
+  }
+
+  // The description pane, when "One pane at a time" applies to it.
+  function descTakesPart() {
+    if (!settings.onePaneAtATime || windowRole === "companion") return null;
+    const desc = document.getElementById("yt-split-desc-pane");
+    if (!desc || getComputedStyle(desc).display === "none") return null;
+    return desc;
+  }
+
+  // After a click on the description title. Opened: close the open list
+  // panes and remember them. Closed: open those panes again.
+  function syncDescPane(expanded) {
+    if (!descTakesPart()) {
+      descRestore = null;
+      return;
+    }
+    if (expanded) {
+      descRestore = shownListPanes().filter((pane) => !pane.classList.contains("yt-split-pane-collapsed"));
+      descRestore.forEach((pane) => setPaneCollapsed(pane, true));
+    } else {
+      if (descRestore) descRestore.forEach((pane) => pane.isConnected && setPaneCollapsed(pane, false));
+      descRestore = null;
+      syncOnePane();
     }
     saveLayout();
   }
@@ -946,7 +992,9 @@
       // stopping the browser from moving focus onto the element at all.
       header.addEventListener("mousedown", (e) => e.preventDefault());
       header.addEventListener("click", () => {
-        setDescExpanded(pane, !pane.classList.contains("yt-split-desc-expanded"));
+        const expanded = !pane.classList.contains("yt-split-desc-expanded");
+        setDescExpanded(pane, expanded);
+        syncDescPane(expanded);
       });
       pane.appendChild(header);
     }
@@ -1712,6 +1760,7 @@
   const WHATS_NEW = {
     version: "1.12",
     tips: [
+      "Opening the description now closes Recommended and Comments, so it gets the whole pane. Close it and they come back. To keep them open, switch off One pane at a time.",
       "Picture-in-picture: click the new button in the player, or press Alt+Shift+P, and the video floats in a small window on top of everything.",
       "Ambient light now glows behind Shorts too, and the Shorts comments panel turns see-through.",
     ],
@@ -2773,6 +2822,9 @@
       commentsPane.classList.add("yt-split-pane-collapsed");
       commentsCollapsed = true;
     }
+    // Recommended is open now, so an open description closes.
+    syncOnePane();
+    updateDescFill();
     const columns = watchRoot().querySelector("#columns");
     if (!columns) return;
     const rect = columns.getBoundingClientRect();
@@ -3080,6 +3132,7 @@
     // comment for why this is no longer persisted via localStorage.
     // (The two-window pop-up has the room, so it starts open there.)
     descExpanded = windowRole === "companion";
+    descRestore = null;
     // Recommendations/comments: always start expanded, same reset — see
     // secondaryCollapsed/commentsCollapsed's own comment above.
     secondaryCollapsed = false;

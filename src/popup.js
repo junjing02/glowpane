@@ -10,7 +10,7 @@ const DEFAULTS = {
   showDescription: true,
   showRecommendations: true,
   showComments: true,
-  onePaneAtATime: false,
+  onePaneAtATime: true,
   sideWidth: "auto",
   paneTransparency: 40,
   rememberLayout: false,
