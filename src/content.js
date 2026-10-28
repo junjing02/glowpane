@@ -551,9 +551,14 @@
   const CLOSING_CLASS = "yt-split-closing";
   const REOPEN_ID = "yt-split-reopen";
   let sideClosed = false;
+  // True while the pane is open only because the video ended (it was
+  // closed before). Playing again, or the next video, closes it again.
+  // Any choice the user makes about the pane clears it.
+  let sideOpenedForEnd = false;
 
   function setSideClosed(closed) {
     sideClosed = closed;
+    sideOpenedForEnd = false;
     if (!isWatchPage()) return;
     const resync = () => {
       constrainVideoSize();
@@ -568,6 +573,19 @@
     // Again once the new grid has really been laid out (same reason as
     // enterRecsFocusMode's repeated nudges).
     setTimeout(resync, 200);
+  }
+
+  // The video ended with the side pane closed: open it, so Recommended is
+  // there to choose the next video (reported: had to reopen it by hand).
+  function openSideForVideoEnd() {
+    if (!sideClosed || windowRole !== "none") return;
+    setSideClosed(false);
+    sideOpenedForEnd = true;
+  }
+
+  function restoreSideClosedAfterEnd() {
+    if (!sideOpenedForEnd) return;
+    setSideClosed(true);
   }
 
   function ensureReopenStrip(columns) {
@@ -679,9 +697,10 @@
     manualSidePin = sidePinFor(current, dragRect, dragRatio);
     hasManualSideWidth = true;
     // Dragging while the pane is widened after a video ended makes the
-    // width the user's own again.
+    // width the user's own again (and an auto-opened pane stays open).
     inRecsFocusMode = false;
     preFocusLayout = null;
+    sideOpenedForEnd = false;
     saveLayout();
   }
 
@@ -719,6 +738,7 @@
       manualSidePin = sidePinFor(px, rect);
       inRecsFocusMode = false;
       preFocusLayout = null;
+      sideOpenedForEnd = false;
       saveLayout();
     });
     // Double-click: back to the automatic default width.
@@ -2897,6 +2917,8 @@
     }
     constrainVideoSize();
     applyPreferredSideWidth();
+    // The pane was closed before the video ended: close it again.
+    restoreSideClosedAfterEnd();
   }
 
   // "ended" also fires for things that aren't the end of the video the
@@ -2911,6 +2933,7 @@
     if (player && (player.classList.contains("ad-showing") || player.classList.contains("ad-interrupting"))) return;
     // First, so a problem in the widening can't stop it.
     maybeAskForRating();
+    openSideForVideoEnd();
     enterRecsFocusMode();
   }
 
@@ -3123,6 +3146,12 @@
     // default it should actually get.
     inRecsFocusMode = false;
     preFocusLayout = null;
+    // A pane opened only because the last video ended closes again for the
+    // next one: the user chose to watch with the pane closed.
+    if (sideOpenedForEnd) {
+      sideOpenedForEnd = false;
+      sideClosed = true;
+    }
     // Description pane: always start collapsed, same "every new
     // navigation" reset as the state above — see descExpanded's own
     // comment for why this is no longer persisted via localStorage.
