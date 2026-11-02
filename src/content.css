@@ -827,12 +827,19 @@ html.yt-split-active #below > * {
    came out tiny and off-center up-left next to the (static) dislike icon.
    Also excludes the Subscribe button (both its older renderer tag and the
    newer view-model tag), which has its own fixed-size pill layout and
-   split into two stacked pills when squeezed. */
+   split into two stacked pills when squeezed.
+   Also excludes every button icon (yt-icon and the button's icon slot):
+   reported tiny icons in the round Share / Save / Download / ... buttons,
+   same squeeze as the like icon. Icons have a fixed size of their own. */
 html.yt-split-active
   #below
   *:not(
     yt-animated-icon,
     yt-animated-icon *,
+    yt-icon,
+    yt-icon *,
+    .yt-spec-button-shape-next__icon,
+    .yt-spec-button-shape-next__icon *,
     ytd-subscribe-button-renderer,
     ytd-subscribe-button-renderer *,
     yt-subscribe-button-view-model,
