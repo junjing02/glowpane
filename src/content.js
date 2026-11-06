@@ -2180,9 +2180,36 @@
       "html classes: " + Array.from(html.classList).filter((c) => c.startsWith("yt-")).join(" "),
       "role: " + windowRole + " settings: " + JSON.stringify(settings),
       "fail-safe: " + (failSafeReason ? failSafeReason + (isFailSafeActive() ? " (stepped aside on this video)" : " (earlier video)") : "not triggered"),
-      "",
-      "== Subscribe elements ==",
     ];
+    // Player sizes: the video box, YouTube's own inline sizes and the
+    // control bar, with the chain up to #primary.
+    lines.push("", "== Player ==");
+    const flexy = root === document ? null : root;
+    if (flexy) {
+      lines.push("flexy attrs: " + Array.from(flexy.attributes).map((a) => a.name).filter((n) => !/^(class|style|id|role)$/.test(n)).join(" "));
+    }
+    lines.push(
+      ["--yt-split-video-max-w", "--yt-split-video-ratio", "--yt-split-video-min-w", "--yt-split-side-w"]
+        .map((v) => v + ": " + (html.style.getPropertyValue(v) || "(unset)"))
+        .join("  ")
+    );
+    const video = root.querySelector("#movie_player video");
+    if (video) {
+      lines.push(`video: ${video.videoWidth}x${video.videoHeight} inline style: ${video.getAttribute("style") || "(none)"}`);
+      let el = video;
+      let depth = 0;
+      while (el && el.id !== "columns" && depth < 10) {
+        const cs = getComputedStyle(el);
+        lines.push("  ".repeat(depth) + describeEl(el) + ` max-w:${cs.maxWidth} ar:${cs.aspectRatio}`);
+        el = el.parentElement;
+        depth++;
+      }
+    } else {
+      lines.push("(no video in #movie_player)");
+    }
+    const bar = root.querySelector("#movie_player .ytp-chrome-bottom");
+    if (bar) lines.push("control bar: " + describeEl(bar) + " inline style: " + (bar.getAttribute("style") || "(none)"));
+    lines.push("", "== Subscribe elements ==");
     const scope = root === document ? document : root;
     const subs = Array.from(scope.querySelectorAll("*")).filter(
       (el) => /subscribe|notification-preference/i.test(el.tagName + " " + el.id) && el.tagName.toLowerCase() !== "svg"

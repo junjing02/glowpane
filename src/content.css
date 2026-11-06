@@ -520,8 +520,15 @@ html.yt-split-active #player-container-outer video {
   height: 100% !important;
 }
 
+/* YouTube also sets an inline left (and top) on the <video>, to center
+   the picture at the width it computed itself. With our width: 100% that
+   offset pushed the whole box sideways: a vertical video showed flush
+   against the right edge with an empty strip on the left (reported).
+   object-fit already centers the picture, so the offset must be 0. */
 html.yt-split-active #player-container-outer video {
   object-fit: contain !important;
+  left: 0 !important;
+  top: 0 !important;
 }
 
 /* Draggable divider between the two columns. Its own box (and grid
