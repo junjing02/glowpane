@@ -610,6 +610,30 @@
   // thin strip at that edge (#yt-split-reopen) brings it back. Kept across
   // videos in this tab, never stored. Normal split only.
   const CLOSE_SNAP_PX = 200;
+  // Both dividers snap to their default size (the size a double-click
+  // resets to) within SNAP_PX of it; releasing while snapped is the same as
+  // that double-click. The divider lights up while snapped (content.css).
+  const SNAP_PX = 14;
+  const SNAP_SIDE_CLASS = "yt-split-snap-side";
+  const SNAP_PANE_CLASS = "yt-split-snap-pane";
+
+  // Snaps px to target when close enough. Returns [px, snapped].
+  function snapToDefault(px, target) {
+    if (target == null || !Number.isFinite(target)) return [px, false];
+    return Math.abs(px - target) <= SNAP_PX ? [target, true] : [px, false];
+  }
+
+  // A size measured with one of our CSS vars briefly unset, i.e. the
+  // default. Restored before the browser paints, so nothing flickers.
+  function measureWithVarUnset(name, measure) {
+    const style = document.documentElement.style;
+    const prev = style.getPropertyValue(name);
+    if (!prev) return measure();
+    style.removeProperty(name);
+    const value = measure();
+    style.setProperty(name, prev);
+    return value;
+  }
   const CLOSING_CLASS = "yt-split-closing";
   const REOPEN_ID = "yt-split-reopen";
   let sideClosed = false;
@@ -706,7 +730,12 @@
     // (dimmed meanwhile as the cue).
     dragState.willClose = windowRole === "none" && px < CLOSE_SNAP_PX;
     document.documentElement.classList.toggle(CLOSING_CLASS, dragState.willClose);
+    let snapped;
+    [px, snapped] = snapToDefault(px, dragState.snapTo);
     px = Math.min(clampSideWidth(px, rect, dragState.ratio), dragState.maxSide);
+    // Only counts as snapped if the clamps left it on the default.
+    dragState.snapped = snapped && Math.abs(px - dragState.snapTo) < 1;
+    document.documentElement.classList.toggle(SNAP_SIDE_CLASS, dragState.snapped);
     pendingSideWidth = px;
     if (!sideWidthFrameScheduled) {
       sideWidthFrameScheduled = true;
@@ -716,6 +745,24 @@
 
   function onDocumentMouseUp() {
     if (!dragState) return;
+    document.documentElement.classList.remove(SNAP_SIDE_CLASS);
+    if (dragState.snapped && !dragState.willClose) {
+      // Released on the default: same as a double-click, so the width
+      // follows the window and the next video again.
+      dragState = null;
+      lastDragEndAt = Date.now();
+      document.body.classList.remove("yt-split-resizing");
+      pendingSideWidth = null;
+      hasManualSideWidth = false;
+      manualSidePin = null;
+      inRecsFocusMode = false;
+      preFocusLayout = null;
+      sideOpenedForEnd = false;
+      applySideWidth();
+      nudgePlayerResize();
+      saveLayout();
+      return;
+    }
     if (dragState.willClose) {
       // Put the width back to where the drag began, so reopening shows the
       // pane as it was, then close it.
@@ -823,7 +870,10 @@
         startWidth: sidePane ? sidePane.getBoundingClientRect().width : 0,
         startX: e.clientX,
         // Hard stop discovered mid-drag by preventColumnOverlap().
-        maxSide: Infinity
+        maxSide: Infinity,
+        // The default width, to snap to.
+        snapTo: defaultSideWidth(),
+        snapped: false
       };
       document.body.classList.add("yt-split-resizing");
       e.preventDefault();
@@ -940,11 +990,17 @@
     if (vDragState.wide) {
       // Same delta-from-mousedown approach, sideways. Cheap enough (one
       // CSS var, no player to nudge) to apply directly.
-      setWideWidth(clampWideWidth(vDragState.startWidth + (e.clientX - vDragState.startX), vDragState.rect));
+      let [width, snappedWide] = snapToDefault(vDragState.startWidth + (e.clientX - vDragState.startX), vDragState.snapTo);
+      width = clampWideWidth(width, vDragState.rect);
+      vDragState.snapped = snappedWide && Math.abs(width - vDragState.snapTo) < 1;
+      document.documentElement.classList.toggle(SNAP_PANE_CLASS, vDragState.snapped);
+      setWideWidth(width);
       return;
     }
-    let px = vDragState.startHeight + (e.clientY - vDragState.startY);
+    let [px, snapped] = snapToDefault(vDragState.startHeight + (e.clientY - vDragState.startY), vDragState.snapTo);
     px = clampTopHeight(px, vDragState.rect, vDragState.descHeight);
+    vDragState.snapped = snapped && Math.abs(px - vDragState.snapTo) < 1;
+    document.documentElement.classList.toggle(SNAP_PANE_CLASS, vDragState.snapped);
     pendingTopHeight = px;
     if (!topHeightFrameScheduled) {
       topHeightFrameScheduled = true;
@@ -954,10 +1010,18 @@
 
   function onDocumentMouseUpV() {
     if (!vDragState) return;
+    const { snapped, wide } = vDragState;
     vDragState = null;
     lastVDragEndAt = Date.now();
     document.body.classList.remove("yt-split-resizing-v", "yt-split-resizing");
+    document.documentElement.classList.remove(SNAP_PANE_CLASS);
     flushTopHeight(); // apply the latest dragged position immediately, don't wait on a pending frame
+    // Released on the default: back to the real default (as a double-click),
+    // which keeps following the pane's size.
+    if (snapped) {
+      if (wide) setWideWidth(null);
+      else setTopHeight(null);
+    }
     // Only kept across videos when "Remember my layout" is on.
     saveLayout();
   }
@@ -1006,6 +1070,10 @@
           rect,
           startX: e.clientX,
           startWidth: secondary ? secondary.getBoundingClientRect().width : rect.width / 2,
+          snapTo: secondary
+            ? measureWithVarUnset(WIDE_WIDTH_VAR, () => secondary.getBoundingClientRect().width)
+            : null,
+          snapped: false,
         };
         document.body.classList.add("yt-split-resizing");
         e.preventDefault();
@@ -1014,7 +1082,10 @@
       const startHeight = secondary ? secondary.getBoundingClientRect().height : MIN_PANE_HEIGHT;
       const descPane = document.getElementById("yt-split-desc-pane");
       const descHeight = descPane ? descPane.getBoundingClientRect().height : 0;
-      vDragState = { sidePane, rect, startY: e.clientY, startHeight, descHeight };
+      const snapTo = secondary
+        ? measureWithVarUnset(TOP_HEIGHT_VAR, () => secondary.getBoundingClientRect().height)
+        : null;
+      vDragState = { sidePane, rect, startY: e.clientY, startHeight, descHeight, snapTo, snapped: false };
       document.body.classList.add("yt-split-resizing-v");
       e.preventDefault();
     });
@@ -2747,28 +2818,34 @@
   // grid row), so this isn't circular with constrainVideoSize()'s own
   // width cap.
   function applySideWidth() {
+    const px = defaultSideWidth();
+    setSideWidth(px == null ? DEFAULT_SIDE_WIDTH : px);
+    // A preset goes through both overlap guards, like a drag.
+    if (px != null && usesSideWidthPreset()) {
+      enforceMinVideoHeight();
+      preventColumnOverlap();
+    }
+  }
+
+  function usesSideWidthPreset() {
+    return !!SIDE_WIDTH_PRESETS[settings.sideWidth] && windowRole === "none";
+  }
+
+  // The automatic default width in px (also the divider's snap point while
+  // dragging), or null while the layout can't be measured yet.
+  function defaultSideWidth() {
     const columns = watchRoot().querySelector("#columns");
     const primaryInner = watchRoot().querySelector("#primary-inner");
-    if (!columns || !primaryInner) {
-      setSideWidth(DEFAULT_SIDE_WIDTH);
-      return;
-    }
+    if (!columns || !primaryInner) return null;
     const columnsRect = columns.getBoundingClientRect();
     const availableHeight = primaryInner.getBoundingClientRect().height;
-    if (columnsRect.width <= 0 || availableHeight <= 0) {
-      setSideWidth(DEFAULT_SIDE_WIDTH);
-      return;
-    }
+    if (columnsRect.width <= 0 || availableHeight <= 0) return null;
 
     // "Side pane width" preset (toolbar panel): a fixed share of the layout
     // instead of sizing around the video. Like a drag, it goes through the
-    // drag clamp and both overlap guards.
-    const preset = SIDE_WIDTH_PRESETS[settings.sideWidth];
-    if (preset && windowRole === "none") {
-      setSideWidth(clampSideWidth(preset * columnsRect.width, columnsRect));
-      enforceMinVideoHeight();
-      preventColumnOverlap();
-      return;
+    // drag clamp (and applySideWidth() runs both overlap guards).
+    if (usesSideWidthPreset()) {
+      return clampSideWidth(SIDE_WIDTH_PRESETS[settings.sideWidth] * columnsRect.width, columnsRect);
     }
 
     const ratio = measureVideoAspectRatio();
@@ -2811,7 +2888,7 @@
     // and at that width the side pane goes side by side (updateWideSide).
     // Ordinary 16:9 videos never reach this limit.
     const evenSplit = (columnsRect.width - overhead) / 2;
-    setSideWidth(Math.max(MIN_SIDE_WIDTH, Math.min(idealSideWidth, evenSplit)));
+    return Math.max(MIN_SIDE_WIDTH, Math.min(idealSideWidth, evenSplit));
   }
 
   // #below no longer shares the left column with the video (it moved into

@@ -579,7 +579,7 @@ html.yt-split-active #yt-split-resizer:hover::after {
   background: var(--split-border-strong);
 }
 
-body.yt-split-resizing html.yt-split-active #yt-split-resizer::after {
+html.yt-split-active body.yt-split-resizing #yt-split-resizer::after {
   background: var(--split-text-dim);
 }
 
@@ -633,8 +633,34 @@ html.yt-split-active #yt-split-vresizer:hover {
   background: var(--split-border-strong);
 }
 
-body.yt-split-resizing-v html.yt-split-active #yt-split-vresizer {
+html.yt-split-active body.yt-split-resizing-v #yt-split-vresizer {
   background: var(--split-text-dim);
+}
+
+/* Snap to the default size (content.js SNAP_PX): while a drag holds a
+   divider on its default, the line turns the accent color and gives one
+   short glow, so the snap can be seen. Box-shadow only (the main line's
+   ::after already uses transform to center itself). */
+html.yt-split-active.yt-split-snap-side #yt-split-resizer::after,
+html.yt-split-active.yt-split-snap-pane #yt-split-vresizer {
+  background: var(--yt-spec-call-to-action, #3ea6ff) !important;
+  animation: ytSplitSnap 0.35s ease-out;
+}
+
+@keyframes ytSplitSnap {
+  from {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--yt-spec-call-to-action, #3ea6ff) 45%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.yt-split-active.yt-split-snap-side #yt-split-resizer::after,
+  html.yt-split-active.yt-split-snap-pane #yt-split-vresizer {
+    animation: none;
+  }
 }
 
 body.yt-split-resizing-v {
