@@ -337,6 +337,68 @@
     saveLayout();
   }
 
+  // ---- YouTube's own side panels (Ask / Gemini, transcript, chapters) ----
+  // YouTube opens these at the top of #secondary, i.e. in our Recommended
+  // pane. Its buttons sit in the description pane, and an open description
+  // keeps Recommended closed, so the panel opened out of sight (reported
+  // for Ask). After any click, a panel that becomes expanded opens
+  // Recommended (which closes the description) and is scrolled into view.
+  // The attribute and value are YouTube's engagement panel markup.
+  const PANEL_SELECTOR = "ytd-engagement-panel-section-list-renderer";
+  const PANEL_EXPANDED = "ENGAGEMENT_PANEL_VISIBILITY_EXPANDED";
+  const PANEL_CHECKS_MS = [150, 500, 1200, 2500];
+  let panelCheckTimers = [];
+  let panelBaseline = null;
+
+  function expandedPanels(secondary) {
+    return Array.from(secondary.querySelectorAll(PANEL_SELECTOR)).filter(
+      (panel) => panel.getAttribute("visibility") === PANEL_EXPANDED
+    );
+  }
+
+  function revealPanel(secondary, panel) {
+    if (secondary.classList.contains("yt-split-pane-collapsed")) {
+      setPaneCollapsed(secondary, false);
+      syncOnePane();
+    }
+    // One frame later, once the opened pane has its size.
+    requestAnimationFrame(() => {
+      if (!panel.isConnected || !secondary.isConnected) return;
+      const header = secondary.querySelector(":scope > .yt-split-pane-header");
+      const headerHeight = header ? header.getBoundingClientRect().height : 0;
+      secondary.scrollTop +=
+        panel.getBoundingClientRect().top - secondary.getBoundingClientRect().top - headerHeight;
+    });
+  }
+
+  function checkForOpenedPanel() {
+    const secondary = document.querySelector("#yt-split-side-pane > #secondary");
+    if (!secondary || !panelBaseline) return;
+    const opened = expandedPanels(secondary).find((panel) => !panelBaseline.has(panel));
+    if (!opened) return;
+    panelBaseline.add(opened);
+    revealPanel(secondary, opened);
+  }
+
+  document.addEventListener(
+    "click",
+    () => {
+      if (!document.documentElement.classList.contains("yt-split-active")) return;
+      const secondary = document.querySelector("#yt-split-side-pane > #secondary");
+      if (!secondary || getComputedStyle(secondary).display === "none") return;
+      // Keep the first snapshot while checks from an earlier click still run.
+      if (!panelCheckTimers.length) panelBaseline = new Set(expandedPanels(secondary));
+      panelCheckTimers.forEach(clearTimeout);
+      panelCheckTimers = PANEL_CHECKS_MS.map((ms, i) =>
+        setTimeout(() => {
+          checkForOpenedPanel();
+          if (i === PANEL_CHECKS_MS.length - 1) panelCheckTimers = [];
+        }, ms)
+      );
+    },
+    true
+  );
+
   // Moves a node into newParent, remembering exactly where it came from so
   // teardownLayout() can put it back — critical for not confusing
   // YouTube's own internal bookkeeping about its DOM.
