@@ -16,6 +16,7 @@
   //   ambientStrength 0-100, the glow's opacity
   //   rememberLayout  keep divider positions / collapsed panes across videos
   //   videoOnRight    swap the two columns
+  //   descOnPause     open the description while the video is paused
   const DEFAULT_SETTINGS = {
     splitEnabled: true,
     ambientEnabled: true,
@@ -28,6 +29,7 @@
     paneTransparency: 40, // 0 = solid panes, 100 = fully see-through
     rememberLayout: false,
     videoOnRight: false,
+    descOnPause: false,
   };
   let settings = { ...DEFAULT_SETTINGS };
   // "Side pane width" presets: the side pane's default share of the layout.
@@ -91,6 +93,10 @@
   // The list panes that were open before the
   // description was opened, to open again when it closes.
   let descRestore = null;
+  // True while the description is open only because the video is paused
+  // (settings.descOnPause); playing again closes it. Any choice the user
+  // makes about the description clears it. See "Description shortcuts".
+  let descOpenedForPause = false;
   // The description pane starts open (pop-up, remembered layout): open
   // YouTube's own "...more" too, once its description is there.
   let descAutoExpand = false;
@@ -335,6 +341,19 @@
       descRestore = null;
     }
     saveLayout();
+  }
+
+  // Opens or closes the description pane, the same as a click on its
+  // title. False when the pane isn't on screen (hidden by its setting,
+  // video only, two-window main window).
+  function setDescriptionOpen(open) {
+    const pane = document.getElementById("yt-split-desc-pane");
+    if (!pane || getComputedStyle(pane).display === "none") return false;
+    if (pane.classList.contains("yt-split-desc-expanded") === open) return true;
+    setDescExpanded(pane, open);
+    syncDescPane(open);
+    if (open) expandYouTubeDescription();
+    return true;
   }
 
   // ---- YouTube's own side panels (Ask / Gemini, transcript, chapters) ----
@@ -1239,10 +1258,8 @@
       // stopping the browser from moving focus onto the element at all.
       header.addEventListener("mousedown", (e) => e.preventDefault());
       header.addEventListener("click", () => {
-        const expanded = !pane.classList.contains("yt-split-desc-expanded");
-        setDescExpanded(pane, expanded);
-        syncDescPane(expanded);
-        if (expanded) expandYouTubeDescription();
+        descOpenedForPause = false;
+        setDescriptionOpen(!pane.classList.contains("yt-split-desc-expanded"));
       });
       pane.appendChild(header);
     }
@@ -1927,6 +1944,9 @@
     // be recorded as the user's layout (reported: the next video kept the
     // widened pane with "Remember my layout" on).
     if (inRecsFocusMode) return;
+    // Same for the description opened by a pause. Playing again closes it,
+    // and that close saves the layout (with any drag made meanwhile).
+    if (descOpenedForPause) return;
     savedLayout = {
       sideRatio: hasManualSideWidth ? manualSideWidthRatio : null,
       sidePin: hasManualSideWidth ? manualSidePin : null,
@@ -1991,11 +2011,11 @@
   // not the manifest version, so small fixes don't nag. New installs get
   // the first-run hint only: dismissing it marks this note seen too.
   const WHATS_NEW = {
-    version: "1.12",
+    version: "1.13",
     tips: [
-      "Opening the description now closes Recommended and Comments, so it gets the whole pane. Close it and they come back.",
-      "Picture-in-picture: click the new button in the player, or press Alt+Shift+P, and the video floats in a small window on top of everything.",
-      "Ambient light now glows behind Shorts too, and the Shorts comments panel turns see-through.",
+      "Press D to open or close the description. No need to reach for the mouse.",
+      "Want to read while you pause? Turn on \"Open description on pause\" behind the toolbar icon.",
+      "Drag the divider to the window edge to hide the side pane: a hint now shows when to let go.",
     ],
   };
 
@@ -3207,6 +3227,74 @@
     enterRecsFocusMode();
   }
 
+  // ---- Description shortcuts ----
+  // By request: opening the description took a trip to the mouse.
+  // 1. The D key (no modifiers, not while typing) opens or closes it, like
+  //    YouTube's own one-key shortcuts (YouTube doesn't use D). With the
+  //    side pane closed (video only), D opens the pane too.
+  // 2. "Open description on pause" (settings.descOnPause, off by default):
+  //    a pause that lasts PAUSE_DESC_DELAY_MS opens it (so a quick pause /
+  //    play doesn't flicker), and playing again closes it, which brings
+  //    Recommended / Comments back (syncDescPane). Not at the video's end,
+  //    during an ad, right after start(), in fullscreen, while a mouse
+  //    button is held (YouTube pauses while the timeline is dragged), or
+  //    when the description was already open.
+  const PAUSE_DESC_DELAY_MS = 400;
+  let pauseDescTimer = 0;
+  let pointerHeld = false;
+  window.addEventListener("pointerdown", () => (pointerHeld = true), true);
+  window.addEventListener("pointerup", () => (pointerHeld = false), true);
+  window.addEventListener("pointercancel", () => (pointerHeld = false), true);
+
+  function onVideoPauseForDesc(e) {
+    clearTimeout(pauseDescTimer);
+    if (!settings.descOnPause) return;
+    const video = e.target;
+    const check = () => {
+      if (!settings.descOnPause || !video.paused || video.ended || !video.isConnected) return;
+      if (pointerHeld) {
+        pauseDescTimer = setTimeout(check, PAUSE_DESC_DELAY_MS);
+        return;
+      }
+      if (windowRole !== "none" || sideClosed || document.fullscreenElement) return;
+      if (!document.documentElement.classList.contains("yt-split-active")) return;
+      if (Date.now() - lastStartAt < 1500) return;
+      const player = document.getElementById("movie_player");
+      if (player && (player.classList.contains("ad-showing") || player.classList.contains("ad-interrupting"))) return;
+      const pane = document.getElementById("yt-split-desc-pane");
+      if (!pane || pane.classList.contains("yt-split-desc-expanded")) return;
+      descOpenedForPause = true;
+      if (!setDescriptionOpen(true)) descOpenedForPause = false;
+    };
+    pauseDescTimer = setTimeout(check, PAUSE_DESC_DELAY_MS);
+  }
+
+  function onVideoPlayForDesc() {
+    clearTimeout(pauseDescTimer);
+    if (!descOpenedForPause) return;
+    setDescriptionOpen(false);
+    descOpenedForPause = false;
+    saveLayout();
+  }
+
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      if (e.key !== "d" && e.key !== "D") return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || e.isComposing) return;
+      const origin = e.composedPath ? e.composedPath()[0] : null;
+      if (isTypingTarget(e.target) || isTypingTarget(origin)) return;
+      if (!settings.splitEnabled || !isWatchPage()) return;
+      if (!document.documentElement.classList.contains("yt-split-active")) return;
+      const pane = document.getElementById("yt-split-desc-pane");
+      if (!pane || !settings.showDescription) return;
+      if (sideClosed && windowRole === "none") setSideClosed(false);
+      descOpenedForPause = false;
+      setDescriptionOpen(!pane.classList.contains("yt-split-desc-expanded"));
+    },
+    true
+  );
+
   // The <video> element is a fresh one every navigation (new video, or a
   // hard refresh), so this is called from start() (once per navigation)
   // rather than ensureLayout() (which runs on every DOM mutation and
@@ -3269,6 +3357,8 @@
     restorePlaybackRate(video);
     video.addEventListener("ended", onVideoEnded);
     video.addEventListener("play", exitRecsFocusMode);
+    video.addEventListener("pause", onVideoPauseForDesc);
+    video.addEventListener("play", onVideoPlayForDesc);
     // If our early sizing calls ran before the video's own intrinsic
     // dimensions were available (measureVideoAspectRatio then had to use
     // the less accurate, CSS-manipulating fallback), redo them now that
@@ -3416,6 +3506,8 @@
     // default it should actually get.
     inRecsFocusMode = false;
     preFocusLayout = null;
+    descOpenedForPause = false;
+    clearTimeout(pauseDescTimer);
     // A pane opened only because the last video ended closes again for the
     // next one: the user chose to watch with the pane closed.
     if (sideOpenedForEnd) {
