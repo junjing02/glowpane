@@ -12,7 +12,7 @@
   // Settings from the toolbar panel (src/popup.*), kept in
   // chrome.storage.local and applied live (see "Settings" near the bottom).
   //   splitEnabled    master switch: off = YouTube untouched
-  //   ambientEnabled  our ambient light (still follows YouTube's own toggle)
+  //   ambientEnabled  our ambient light (YouTube's Ambient mode toggle sets it too)
   //   ambientStrength 0-100, the glow's opacity
   //   rememberLayout  keep divider positions / collapsed panes across videos
   //   videoOnRight    swap the two columns
@@ -1369,8 +1369,9 @@
   //      flicker without noticeable lag. CSS adds a little more blur plus
   //      brightness/saturation (--split-ambient-* tokens in content.css),
   //      and a separate grain layer hides color banding.
-  // It follows YouTube's own "Ambient mode" setting (and dark theme), and
-  // YouTube's native glow is hidden (content.css). Replaces an earlier
+  // The extension's "Ambient light" switch turns it on and off; YouTube's
+  // own "Ambient mode" toggle sets that switch too (see "Ambient mode
+  // toggle" below). YouTube's native glow is hidden (content.css). Replaces an earlier
   // approach of restyling YouTube's own #cinematics glow, which lagged
   // (YouTube samples the video only now and then and slowly cross-fades)
   // and couldn't be made to cover the window cleanly.
@@ -1395,48 +1396,46 @@
   const AMBIENT_CALM_FRAME_MS = 250;
   const AMBIENT_CALM_BLEND = 0.12;
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-  const AMBIENT_CHECK_MS = 500; // how often to re-check YouTube's setting
+  const AMBIENT_CHECK_MS = 500; // how often to re-check the on/off state
   const AMBIENT_STILL_FRAMES = 12; // redraws after pausing before idling
   // Start of the path in YouTube's "Ambient mode" settings-menu icon.
   const AMBIENT_MENU_ICON = "M21 7v10H3V7h18m1-1H2v12h20V6z";
 
   let ambient = null;
 
-  // Last Ambient mode state read from YouTube's own settings menu,
-  // remembered (in memory and localStorage, which this content script
-  // shares with youtube.com) because the menu item isn't always in the
-  // DOM: YouTube can tear the settings menu down once it's closed. An
-  // earlier version only read the live menu and otherwise guessed from
-  // YouTube's own glow canvas, which stays in the DOM with ambient mode
-  // off, so the glow kept running after the user turned ambient mode off.
-  const AMBIENT_SAVED_KEY = "ytSplitAmbientMode";
+  // Before 1.12.6 the glow needed BOTH the extension's switch and
+  // YouTube's own Ambient mode (dark theme). With YouTube's mode off, the
+  // switch did nothing (reported). Now the switch alone decides, and
+  // toggling YouTube's "Ambient mode" menu item sets the switch to match
+  // (onAmbientMenuToggle), so either control works and the panel always
+  // shows the real state. The old version remembered YouTube's state in
+  // this localStorage key; migrateAmbientPref() reads it once.
+  const OLD_AMBIENT_KEY = "ytSplitAmbientMode";
 
-  function loadAmbientPref() {
+  // One time: a user whose YouTube Ambient mode was off saw no glow, so
+  // start them with the switch off instead of the glow appearing unasked.
+  function migrateAmbientPref() {
+    let saved = null;
     try {
-      const v = localStorage.getItem(AMBIENT_SAVED_KEY);
-      return v === "on" ? true : v === "off" ? false : null;
+      saved = localStorage.getItem(OLD_AMBIENT_KEY);
+      localStorage.removeItem(OLD_AMBIENT_KEY);
     } catch (e) {
-      return null;
+      // storage unavailable: keep the switch as it is
     }
-  }
-
-  function saveAmbientPref(on) {
-    try {
-      localStorage.setItem(AMBIENT_SAVED_KEY, on ? "on" : "off");
-    } catch (e) {
-      // storage unavailable; the in-memory state still works this session
+    const update = { ambientMigrated: true };
+    if (saved === "off" && settings.ambientEnabled) {
+      settings.ambientEnabled = false;
+      update.ambientEnabled = false;
     }
+    chrome.storage.local.set(update).catch(() => {});
   }
 
   // The "Ambient mode" item in the player's settings menu, matched by its
-  // icon or by "ambient" in its text, among any menu checkbox on the page.
-  function findAmbientMenuItem() {
-    for (const item of document.querySelectorAll('.ytp-menuitem, [role="menuitemcheckbox"]')) {
-      const path = item.querySelector("path");
-      const d = path ? path.getAttribute("d") || "" : "";
-      if (d.startsWith(AMBIENT_MENU_ICON) || /ambient/i.test(item.textContent)) return item;
-    }
-    return null;
+  // icon or by "ambient" in its text.
+  function isAmbientMenuItem(item) {
+    const path = item.querySelector("path");
+    const d = path ? path.getAttribute("d") || "" : "";
+    return d.startsWith(AMBIENT_MENU_ICON) || /ambient/i.test(item.textContent);
   }
 
   // Checked state from the item itself or whichever child carries
@@ -1444,29 +1443,6 @@
   function readMenuChecked(item) {
     const el = item.hasAttribute("aria-checked") ? item : item.querySelector("[aria-checked]");
     return el ? el.getAttribute("aria-checked") === "true" : null;
-  }
-
-  // Whether YouTube's own Ambient mode is on, and which signal said so.
-  // Order: the live settings-menu item (saved for later), then the last
-  // saved state, then (only if the state has never been read) whether
-  // YouTube set up its own glow canvas. That's dark theme: YouTube has no
-  // Ambient mode in light theme, so there the extension's own "Ambient
-  // light" switch (settings.ambientEnabled, checked by the caller) is the
-  // only control, and the glow is on.
-  function readYouTubeAmbientMode() {
-    if (!document.documentElement.hasAttribute("dark")) return { on: true, source: "light theme (extension switch)" };
-    const item = findAmbientMenuItem();
-    const checked = item ? readMenuChecked(item) : null;
-    if (checked !== null) {
-      saveAmbientPref(checked);
-      return { on: checked, source: "settings menu" };
-    }
-    const saved = loadAmbientPref();
-    if (saved !== null) return { on: saved, source: "remembered setting" };
-    // Shorts have no watch-page glow canvas to guess from.
-    if (isShortsPage()) return { on: true, source: "Shorts (extension switch)" };
-    const cinematics = document.querySelector("#cinematics, #cinematics-container");
-    return { on: !!(cinematics && cinematics.querySelector("canvas")), source: "YouTube glow (guess)" };
   }
 
   function setAmbientOn(on, source) {
@@ -1543,8 +1519,7 @@
 
     if (now - ambient.lastCheck >= AMBIENT_CHECK_MS) {
       ambient.lastCheck = now;
-      const mode = readYouTubeAmbientMode();
-      setAmbientOn(settings.ambientEnabled && mode.on, settings.ambientEnabled ? mode.source : "setting off");
+      setAmbientOn(!!settings.ambientEnabled, "extension switch");
     }
     // Fullscreen: the glow is hidden (content.css), so don't spend frames
     // drawing it; start clean (no blending from a stale frame) on exit.
@@ -1677,25 +1652,36 @@
     a.fresh = false;
   }
 
-  // Toggling "Ambient mode" in the player's settings menu: re-check right
-  // away instead of waiting out AMBIENT_CHECK_MS, twice, since YouTube may
-  // update the item's aria-checked a moment after the click. The check
-  // itself also saves the new state (see readYouTubeAmbientMode).
-  document.addEventListener(
-    "click",
-    (e) => {
-      if (!ambient || !e.target.closest) return;
-      if (!e.target.closest('.ytp-menuitem, [role="menuitemcheckbox"]')) return;
-      for (const delay of [60, 300]) {
-        setTimeout(() => {
-          if (!ambient) return;
-          const mode = readYouTubeAmbientMode();
-          setAmbientOn(settings.ambientEnabled && mode.on, settings.ambientEnabled ? mode.source : "setting off");
-        }, delay);
-      }
-    },
-    true
-  );
+  // ---- Ambient mode toggle ----
+  // A click (or Enter / Space) on YouTube's "Ambient mode" menu item sets
+  // the extension's switch to the item's new state, read 60ms and 300ms
+  // later because YouTube may update aria-checked a moment after. Only a
+  // change the user just made counts, so YouTube's own state never
+  // switches the glow off by itself. Works in every layout (theater too),
+  // so the switch is already right when the split comes back.
+  function onAmbientMenuToggle(e) {
+    if (e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
+    if (!e.target.closest) return;
+    const item = e.target.closest('.ytp-menuitem, [role="menuitemcheckbox"]');
+    if (!item || !isAmbientMenuItem(item)) return;
+    const before = readMenuChecked(item);
+    for (const delay of [60, 300]) {
+      setTimeout(() => {
+        const after = readMenuChecked(item);
+        if (after === null || after === before || settings.ambientEnabled === after) return;
+        settings.ambientEnabled = after;
+        applyAmbientSettings();
+        updateShortsGlow();
+        try {
+          chrome.storage.local.set({ ambientEnabled: after }).catch(() => {});
+        } catch (err) {
+          // extension reloaded: this page's copy can no longer save
+        }
+      }, delay);
+    }
+  }
+  document.addEventListener("click", onAmbientMenuToggle, true);
+  document.addEventListener("keydown", onAmbientMenuToggle, true);
 
   // ---- Ambient light on Shorts ----
   // The same glow as the watch page, behind the Short that's on screen
@@ -1705,8 +1691,7 @@
   // layout. A CSS-only Shorts layout from the first version fought
   // YouTube's comments panel and was removed in 1.10.7; don't move or
   // restyle Shorts' own elements here. Off with the master switch or the
-  // "Ambient light" switch; in dark theme it also follows YouTube's
-  // Ambient mode, like the watch page.
+  // "Ambient light" switch, like the watch page.
   const SHORTS_GLOW_CLASS = "yt-shorts-glow";
 
   function isShortsPage() {
@@ -3775,7 +3760,7 @@
   }
 
   try {
-    chrome.storage.local.get({ ...DEFAULT_SETTINGS, savedLayout: null, welcomeSeen: false, seenVersion: null, videosSeen: 0, rateAsked: false }).then((stored) => {
+    chrome.storage.local.get({ ...DEFAULT_SETTINGS, ambientMigrated: false, savedLayout: null, welcomeSeen: false, seenVersion: null, videosSeen: 0, rateAsked: false }).then((stored) => {
       for (const key of Object.keys(DEFAULT_SETTINGS)) settings[key] = stored[key];
       savedLayout = stored.savedLayout;
       welcomeSeen = !!stored.welcomeSeen;
@@ -3783,6 +3768,7 @@
       videosSeen = Number(stored.videosSeen) || 0;
       rateAsked = !!stored.rateAsked;
       storageLoaded = true;
+      if (!stored.ambientMigrated) migrateAmbientPref();
       applyAmbientSettings();
       applyPaneTransparency();
       if (isWatchPage()) start();
