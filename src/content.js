@@ -2327,8 +2327,26 @@
     }
     const bar = root.querySelector("#movie_player .ytp-chrome-bottom");
     if (bar) lines.push("control bar: " + describeEl(bar) + " inline style: " + (bar.getAttribute("style") || "(none)"));
-    lines.push("", "== Subscribe elements ==");
     const scope = root === document ? document : root;
+    // Button icons in the channel row: the chain from each icon's svg up
+    // to its button, with the sizes a squeeze would change.
+    lines.push("", "== Button icons ==");
+    const iconRow = scope.querySelector("#below #top-row") || scope.querySelector("#below");
+    const svgs = iconRow ? Array.from(iconRow.querySelectorAll("button svg")).slice(0, 10) : [];
+    if (!svgs.length) lines.push("(none found)");
+    svgs.forEach((svg, i) => {
+      lines.push(`icon ${i + 1}:`);
+      let el = svg;
+      let depth = 1;
+      while (el && depth < 10) {
+        const cs = getComputedStyle(el);
+        lines.push("  ".repeat(depth) + describeEl(el) + ` w:${cs.width} max-w:${cs.maxWidth} min-w:${cs.minWidth} box:${cs.boxSizing}`);
+        if (el.tagName.toLowerCase() === "button") break;
+        el = el.parentElement;
+        depth++;
+      }
+    });
+    lines.push("", "== Subscribe elements ==");
     const subs = Array.from(scope.querySelectorAll("*")).filter(
       (el) => /subscribe|notification-preference/i.test(el.tagName + " " + el.id) && el.tagName.toLowerCase() !== "svg"
     );

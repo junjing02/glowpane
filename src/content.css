@@ -863,7 +863,12 @@ html.yt-split-active #below > * {
    split into two stacked pills when squeezed.
    Also excludes every button icon (yt-icon and the button's icon slot):
    reported tiny icons in the round Share / Save / Download / ... buttons,
-   same squeeze as the like icon. Icons have a fixed size of their own. */
+   same squeeze as the like icon. Icons have a fixed size of their own.
+   v1.12.7: reported again on the same buttons, so YouTube's markup there
+   no longer matched those names (it is moving to new camelCase class
+   names). Now everything inside a <button>, and every svg, is excluded
+   too: that doesn't depend on YouTube's class names. Buttons wrap onto
+   new rows in the action row, so they don't need to shrink. */
 html.yt-split-active
   #below
   *:not(
@@ -873,6 +878,10 @@ html.yt-split-active
     yt-icon *,
     .yt-spec-button-shape-next__icon,
     .yt-spec-button-shape-next__icon *,
+    button,
+    button *,
+    svg,
+    svg *,
     ytd-subscribe-button-renderer,
     ytd-subscribe-button-renderer *,
     yt-subscribe-button-view-model,
