@@ -1702,9 +1702,154 @@ html.yt-split-active.yt-split-hide-desc.yt-split-wide-side:not(#_#_#_) #yt-split
    on that edge (#yt-split-reopen, a fixed child of #columns) brings it
    back: barely visible until hovered, so it doesn't distract from the
    video. Hidden in fullscreen like the ambient layers. */
-html.yt-split-active.yt-split-closing #yt-split-side-pane {
-  opacity: 0.3;
-  transition: opacity 0.12s ease;
+/* v1.12.8, the way there (reported: no response past the pane's minimum,
+   then a sudden dim). --yt-split-close-p goes 0 → 1 between the minimum
+   and the point where releasing closes. The pane and the divider follow
+   the cursor with resistance (up to 40px) and fade; #columns clips them
+   so nothing makes a scrollbar. Released early, they spring back (the
+   base transition). Released at 1, the pane slides out (closing-out),
+   then content.js closes it. Transform and opacity only: sizes are never
+   animated. */
+html.yt-split-active #yt-split-side-pane,
+html.yt-split-active #yt-split-resizer {
+  transition: transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.24s ease;
+}
+
+html.yt-split-active.yt-split-pulling #columns,
+html.yt-split-active.yt-split-closing-out #columns {
+  overflow-x: clip !important;
+}
+
+html.yt-split-active.yt-split-pulling #yt-split-side-pane,
+html.yt-split-active.yt-split-pulling #yt-split-resizer {
+  transform: translateX(calc(var(--yt-split-close-p, 0) * 40px));
+  transition-duration: 0.06s;
+}
+
+html.yt-split-active.yt-split-pulling.yt-split-swapped #yt-split-side-pane,
+html.yt-split-active.yt-split-pulling.yt-split-swapped #yt-split-resizer {
+  transform: translateX(calc(var(--yt-split-close-p, 0) * -40px));
+}
+
+html.yt-split-active.yt-split-pulling #yt-split-side-pane {
+  opacity: calc(1 - var(--yt-split-close-p, 0) * 0.45);
+}
+
+html.yt-split-active.yt-split-pulling.yt-split-closing #yt-split-side-pane {
+  opacity: 0.4;
+}
+
+html.yt-split-active.yt-split-closing-out #yt-split-side-pane {
+  transform: translateX(calc(100% + 40px));
+  opacity: 0;
+  transition: transform 0.22s cubic-bezier(0.4, 0, 1, 1), opacity 0.22s ease-in;
+}
+
+html.yt-split-active.yt-split-closing-out.yt-split-swapped #yt-split-side-pane {
+  transform: translateX(calc(-100% - 40px));
+}
+
+html.yt-split-active.yt-split-closing-out #yt-split-resizer {
+  opacity: 0;
+}
+
+/* The hint in the middle of the pane (content.js updateCloseHint): its
+   bar fills toward the edge as the drag gets closer, then turns blue
+   with "Release to hide the side pane". Fixed in <body>, so the pane's
+   own movement and fade don't touch it. */
+html.yt-split-active #yt-split-close-hint {
+  position: fixed;
+  z-index: 2200;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 10px 16px 12px;
+  border-radius: 12px;
+  background: rgba(15, 15, 15, 0.85);
+  color: #fff;
+  font: 500 13px/1.3 Roboto, Arial, sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  animation: yt-split-fade-in 0.15s ease;
+}
+
+html.yt-split-active #yt-split-close-hint .row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+html.yt-split-active #yt-split-close-hint svg {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s ease;
+}
+
+html.yt-split-active #yt-split-close-hint.is-left svg {
+  transform: scaleX(-1);
+}
+
+html.yt-split-active #yt-split-close-hint .bar {
+  display: block;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+}
+
+html.yt-split-active #yt-split-close-hint .fill {
+  display: block;
+  height: 100%;
+  background: #fff;
+  transform-origin: left center;
+  transform: scaleX(var(--yt-split-close-p, 0));
+}
+
+html.yt-split-active #yt-split-close-hint.is-left .fill {
+  transform-origin: right center;
+}
+
+html.yt-split-active #yt-split-close-hint.is-ready {
+  animation: ytSplitHintReady 0.2s ease-out;
+}
+
+html.yt-split-active #yt-split-close-hint.is-ready .fill {
+  background: var(--yt-spec-call-to-action, #3ea6ff);
+}
+
+@keyframes ytSplitHintReady {
+  from { transform: translate(-50%, -50%) scale(0.94); }
+  to { transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Just closed: the reopen strip's line pulses, to show where the pane
+   went (content.js pulseReopenStrip; skipped under reduced motion). */
+#yt-split-reopen.is-new::after {
+  animation: ytSplitReopenPulse 1.2s ease-in-out 2;
+}
+
+@keyframes ytSplitReopenPulse {
+  0%, 100% { height: 56px; background: var(--split-border-strong); }
+  50% { height: 120px; background: var(--yt-spec-call-to-action, #3ea6ff); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.yt-split-active.yt-split-pulling #yt-split-side-pane,
+  html.yt-split-active.yt-split-pulling #yt-split-resizer,
+  html.yt-split-active.yt-split-closing-out #yt-split-side-pane {
+    transform: none;
+  }
+  html.yt-split-active #yt-split-close-hint,
+  html.yt-split-active #yt-split-close-hint.is-ready {
+    animation: none;
+  }
 }
 
 #yt-split-reopen {

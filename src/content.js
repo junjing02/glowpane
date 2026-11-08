@@ -636,6 +636,90 @@
   }
   const CLOSING_CLASS = "yt-split-closing";
   const REOPEN_ID = "yt-split-reopen";
+  // Feedback on the way to closing (reported: nothing happened past the
+  // pane's minimum, then it suddenly dimmed). Past the minimum, the pane
+  // and divider follow the cursor with resistance and fade a little
+  // (--yt-split-close-p, 0 to 1, reaches 1 where releasing closes), and a
+  // hint in the pane shows how far is left. Releasing there slides the
+  // pane out before it closes, and the reopen strip pulses to show where
+  // it went. content.css "Closing the side pane".
+  const PULLING_CLASS = "yt-split-pulling";
+  const CLOSING_OUT_CLASS = "yt-split-closing-out";
+  const CLOSE_P_VAR = "--yt-split-close-p";
+  const CLOSE_HINT_ID = "yt-split-close-hint";
+  const CLOSE_OUT_MS = 220;
+  const REOPEN_PULSE_MS = 2600;
+
+  // raw: the width the cursor asks for; px: what the clamps allowed.
+  function updateClosePull(raw, px) {
+    const html = document.documentElement;
+    const pull = windowRole === "none" && !dragState.snapped ? Math.max(0, px - raw) : 0;
+    const p = Math.min(1, pull / Math.max(40, px - CLOSE_SNAP_PX));
+    html.classList.toggle(PULLING_CLASS, p > 0);
+    html.style.setProperty(CLOSE_P_VAR, p.toFixed(3));
+    updateCloseHint(p, dragState.willClose);
+  }
+
+  function updateCloseHint(p, ready) {
+    let hint = document.getElementById(CLOSE_HINT_ID);
+    if (p <= 0) {
+      if (hint) hint.remove();
+      return;
+    }
+    if (!hint) {
+      hint = document.createElement("div");
+      hint.id = CLOSE_HINT_ID;
+      hint.setAttribute("aria-hidden", "true");
+      const row = document.createElement("span");
+      row.className = "row";
+      const icon = document.createElementNS(SVG_NS, "svg");
+      icon.setAttribute("viewBox", "0 0 24 24");
+      icon.setAttribute("width", "16");
+      icon.setAttribute("height", "16");
+      const path = document.createElementNS(SVG_NS, "path");
+      path.setAttribute("d", "M5 12h12M13 6l6 6-6 6");
+      icon.appendChild(path);
+      const label = document.createElement("span");
+      label.className = "label";
+      row.append(icon, label);
+      const bar = document.createElement("span");
+      bar.className = "bar";
+      const fill = document.createElement("span");
+      fill.className = "fill";
+      bar.appendChild(fill);
+      hint.append(row, bar);
+      // Centered on the pane; measured once, since the pane holds its
+      // width while it's being pulled.
+      const pane = document.getElementById("yt-split-side-pane");
+      const r = pane ? pane.getBoundingClientRect() : null;
+      if (r) {
+        hint.style.left = Math.round(r.left + r.width / 2) + "px";
+        hint.style.top = Math.round(r.top + r.height / 2) + "px";
+      }
+      document.body.appendChild(hint);
+    }
+    hint.classList.toggle("is-left", isSwapped());
+    hint.classList.toggle("is-ready", !!ready);
+    const text = ready ? "Release to hide the side pane" : "Keep dragging to hide the side pane";
+    const label = hint.querySelector(".label");
+    if (label && label.textContent !== text) label.textContent = text;
+  }
+
+  function clearClosePull() {
+    const html = document.documentElement;
+    html.classList.remove(PULLING_CLASS, CLOSING_OUT_CLASS);
+    html.style.removeProperty(CLOSE_P_VAR);
+    const hint = document.getElementById(CLOSE_HINT_ID);
+    if (hint) hint.remove();
+  }
+
+  // Show where the pane went: the reopen strip pulses a few times.
+  function pulseReopenStrip() {
+    const strip = document.getElementById(REOPEN_ID);
+    if (!strip || reducedMotion.matches) return;
+    strip.classList.add("is-new");
+    setTimeout(() => strip.classList.remove("is-new"), REOPEN_PULSE_MS);
+  }
   let sideClosed = false;
   // True while the pane is open only because the video ended (it was
   // closed before). Playing again, or the next video, closes it again.
@@ -726,8 +810,9 @@
     // on the left, so dragging right widens it instead.
     const dir = isSwapped() ? -1 : 1;
     let px = dragState.startWidth + dir * (dragState.startX - e.clientX);
+    const raw = px;
     // Pulled well past the minimum: releasing here closes the side pane
-    // (dimmed meanwhile as the cue).
+    // (see updateClosePull for the cues on the way).
     dragState.willClose = windowRole === "none" && px < CLOSE_SNAP_PX;
     document.documentElement.classList.toggle(CLOSING_CLASS, dragState.willClose);
     let snapped;
@@ -736,6 +821,7 @@
     // Only counts as snapped if the clamps left it on the default.
     dragState.snapped = snapped && Math.abs(px - dragState.snapTo) < 1;
     document.documentElement.classList.toggle(SNAP_SIDE_CLASS, dragState.snapped);
+    updateClosePull(raw, px);
     pendingSideWidth = px;
     if (!sideWidthFrameScheduled) {
       sideWidthFrameScheduled = true;
@@ -746,6 +832,7 @@
   function onDocumentMouseUp() {
     if (!dragState) return;
     document.documentElement.classList.remove(SNAP_SIDE_CLASS);
+    if (!dragState.willClose) clearClosePull();
     if (dragState.snapped && !dragState.willClose) {
       // Released on the default: same as a double-click, so the width
       // follows the window and the next video again.
@@ -770,10 +857,23 @@
       dragState = null;
       lastDragEndAt = Date.now();
       document.body.classList.remove("yt-split-resizing");
-      document.documentElement.classList.remove(CLOSING_CLASS);
       pendingSideWidth = null;
-      if (startWidth > 0) setSideWidth(startWidth);
-      setSideClosed(true);
+      // Slide the pane out first (content.css), then close it. The width
+      // goes back in the same step as the close, so it never jumps.
+      const html = document.documentElement;
+      const hint = document.getElementById(CLOSE_HINT_ID);
+      if (hint) hint.remove();
+      html.classList.remove(PULLING_CLASS);
+      html.classList.add(CLOSING_OUT_CLASS);
+      const finish = () => {
+        clearClosePull();
+        html.classList.remove(CLOSING_CLASS);
+        if (startWidth > 0) setSideWidth(startWidth);
+        setSideClosed(true);
+        pulseReopenStrip();
+      };
+      if (reducedMotion.matches) finish();
+      else setTimeout(finish, CLOSE_OUT_MS);
       return;
     }
     const columnsWidth = dragState.rect.width;
@@ -2719,6 +2819,7 @@
     const reopen = document.getElementById(REOPEN_ID);
     if (reopen) reopen.remove();
     document.documentElement.classList.remove(CLOSING_CLASS);
+    clearClosePull();
 
     if (!ambient || ambient.mode !== "shorts") teardownAmbient();
     placeRelatedNatively();

@@ -62,7 +62,7 @@ Click the extension's toolbar icon for the settings: the split itself, Two windo
 - `Alt+Shift+S` turns the split on or off, `Alt+Shift+W` toggles Two windows, `Alt+Shift+V` hides or shows the side pane (video only), and `Alt+Shift+P` opens or closes picture-in-picture. Change them at `chrome://extensions/shortcuts`.
 - Picture-in-picture: click the button next to the player's settings icon (or press `Alt+Shift+P`), and the video floats in a small window on top of your other apps. It works on Shorts too, with the shortcut.
 - Double-click a divider to reset it. While you drag, a divider snaps to its default size, so you can find it again. With a divider focused, the arrow keys move it.
-- For a quick video-only view, drag the main divider to the window edge. Click the strip at that edge to reopen the side pane. When the video ends, the side pane opens by itself so you can pick the next one, and it closes again when the next video plays. Your Show settings stay as they are.
+- For a quick video-only view, drag the main divider to the window edge. Past the pane's smallest size it starts to slide away, and a hint shows when to let go. Click the strip at that edge to reopen the side pane. When the video ends, the side pane opens by itself so you can pick the next one, and it closes again when the next video plays. Your Show settings stay as they are.
 - Ambient light works in light and dark themes. Its switch is in the toolbar panel, and YouTube's own Ambient mode switch turns it on and off too.
 
 ## Privacy
