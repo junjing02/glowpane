@@ -145,11 +145,18 @@ if (morphDemo) {
       "cursor-comments",
       "cursor-collapsed",
       "cursor-press",
+      "desc-open",
+      "key-d",
+      "key-s",
+      "speed-on",
+      "speed-toast",
     ];
     const SPLIT = "With Glowpane";
     const SCROLL = "Scroll freely — the video stays put";
     const DRAG = "Drag the divider to resize";
     const COLLAPSE = "Collapse what you don't need";
+    const READ = "Press D to read the description";
+    const SPEED = "Press S: your speed, on every video";
     // cls: the complete set of state classes for the step. hold: ms before
     // the next step. Pane/cursor moves take 0.85s (style.css), so holds
     // that follow a move are longer than that.
@@ -168,7 +175,16 @@ if (morphDemo) {
       { cls: ["is-after", "cursor-collapsed", "comments-collapsed"], caption: COLLAPSE, hold: 1000 },
       { cls: ["is-after", "cursor-collapsed", "comments-collapsed", "cursor-press"], caption: COLLAPSE, hold: 160 },
       { cls: ["is-after", "cursor-collapsed"], caption: COLLAPSE, hold: 1400 },
-      { cls: ["is-after"], caption: SPLIT, hold: 1200 },
+      { cls: ["is-after"], caption: READ, hold: 900 },
+      { cls: ["is-after", "key-d"], caption: READ, hold: 450 },
+      { cls: ["is-after", "desc-open"], caption: READ, hold: 2600 },
+      { cls: ["is-after", "desc-open", "key-d"], caption: READ, hold: 450 },
+      { cls: ["is-after"], caption: READ, hold: 1300 },
+      { cls: ["is-after"], caption: SPEED, hold: 900 },
+      { cls: ["is-after", "key-s"], caption: SPEED, hold: 450 },
+      { cls: ["is-after", "speed-on", "speed-toast"], caption: SPEED, hold: 1500 },
+      { cls: ["is-after", "speed-on"], caption: SPEED, hold: 1500 },
+      { cls: ["is-after", "speed-on"], caption: SPLIT, hold: 1200 },
     ];
 
     let timer = null;

@@ -1290,14 +1290,14 @@ img {
   left: 69%;
   top: 8.7%;
   width: 30%;
-  height: 5.5%;
+  height: 10%;
 }
 
 .morph-demo.is-after .morph-rec {
   left: 69%;
-  top: 15.9%;
+  top: 20.4%;
   width: 30%;
-  height: 40.3%;
+  height: 35.8%;
 }
 
 .morph-demo.is-after .morph-comments {
@@ -1327,7 +1327,7 @@ img {
 
 /* Comments collapsed to its header; Recommended grows into the space. */
 .morph-demo.is-after.comments-collapsed .morph-rec {
-  height: 75.2%;
+  height: 70.7%;
 }
 
 .morph-demo.is-after.comments-collapsed .morph-comments {
@@ -1385,6 +1385,151 @@ img {
 
   .morph-scroll-list {
     scroll-behavior: auto;
+  }
+}
+
+/* ---- New in 1.13 / 1.14: the D and S keys ----
+   The closed description shows the video title under its label (one bar
+   here). D opens the description: it fills the pane and Recommended /
+   Comments close to their titles, as in the extension. S lights the speed
+   button in the player and shows a short note on the video. The keycaps
+   pop up over the video while the "key" step lasts. */
+.desc-peek {
+  position: absolute;
+  top: 26px;
+  left: 10px;
+  right: 34%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line-strong);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.morph-demo.is-after .desc-peek {
+  opacity: 1;
+  transition-delay: 0.35s;
+}
+
+.desc-text {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 4px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.desc-text span {
+  display: block;
+  height: 5px;
+  border-radius: 2px;
+  background: var(--line);
+}
+
+.morph-demo.is-after.desc-open .morph-desc {
+  height: 68.9%;
+  padding-top: 30px;
+}
+
+.morph-demo.is-after.desc-open .morph-rec {
+  top: 79.3%;
+  height: 5.5%;
+}
+
+.morph-demo.is-after.desc-open .morph-comments {
+  top: 92.8%;
+  height: 5.5%;
+}
+
+.morph-demo.is-after.desc-open .desc-full,
+.morph-demo.is-after.desc-open .desc-text {
+  opacity: 1;
+  transition-delay: 0.3s;
+}
+
+.morph-demo.is-after.desc-open .desc-peek {
+  opacity: 0;
+  transition-delay: 0s;
+}
+
+.morph-demo.desc-open .desc-header .caret {
+  transform: rotate(90deg);
+}
+
+.morph-demo.desc-open .morph-rec .caret,
+.morph-demo.desc-open .morph-comments .caret {
+  transform: rotate(-90deg);
+}
+
+.mock-ctrl-row .c-speed {
+  width: 15px;
+  height: 8px;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  border-radius: 2px;
+  background: transparent;
+  transition: background-color 0.2s ease;
+}
+
+.morph-demo.speed-on .mock-ctrl-row .c-speed {
+  background: #ffffff;
+}
+
+.mock-toast {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-50%);
+  transition: opacity 0.2s ease;
+}
+
+.morph-demo.speed-toast .mock-toast {
+  opacity: 1;
+}
+
+.mock-key {
+  position: absolute;
+  z-index: 5;
+  left: 34.5%;
+  top: 66%;
+  min-width: 30px;
+  padding: 6px 9px 7px;
+  border: 1px solid rgba(17, 19, 22, 0.2);
+  border-bottom-width: 3px;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #111316;
+  font: 600 14px/1 var(--font);
+  text-align: center;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.7);
+  transition: opacity 0.18s ease, transform 0.18s var(--ease);
+}
+
+.morph-demo.key-d .k-d,
+.morph-demo.key-s .k-s {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desc-peek,
+  .desc-text,
+  .mock-toast,
+  .mock-key,
+  .mock-ctrl-row .c-speed {
+    transition: none !important;
   }
 }
 
@@ -1820,14 +1965,80 @@ img {
   }
 }
 
+.glow-hint {
+  position: absolute;
+  z-index: 4;
+  left: 82%;
+  top: 34%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px 7px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-50%);
+  animation: glowHint 14s ease infinite;
+}
+
+.glow-hint i {
+  display: block;
+  width: 100%;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform-origin: 0 50%;
+  animation: glowHintFill 14s linear infinite;
+}
+
+@keyframes glowHint {
+  0%,
+  31% {
+    opacity: 0;
+  }
+  34%,
+  42% {
+    opacity: 1;
+  }
+  45%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes glowHintFill {
+  0%,
+  31% {
+    transform: scaleX(0.1);
+  }
+  41%,
+  100% {
+    transform: scaleX(1);
+  }
+}
+
 @keyframes glowStrip {
   0%,
   46% {
     opacity: 0;
   }
-  50%,
+  50% {
+    opacity: 1;
+    background-color: var(--accent);
+    box-shadow: 0 0 10px var(--accent);
+  }
+  58%,
   75% {
     opacity: 1;
+    background-color: var(--line-strong);
+    box-shadow: none;
   }
   78%,
   100% {
@@ -1899,6 +2110,7 @@ img {
 
   .glow-divider,
   .glow-strip,
+  .glow-hint,
   .glow-cursor {
     display: none;
   }
