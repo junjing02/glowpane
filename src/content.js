@@ -17,6 +17,7 @@
   //   rememberLayout  keep divider positions / collapsed panes across videos
   //   videoOnRight    swap the two columns
   //   descOnPause     open the description while the video is paused
+  //   speedRate       "My speed"; speedOn: whether new videos start at it
   const DEFAULT_SETTINGS = {
     splitEnabled: true,
     ambientEnabled: true,
@@ -30,6 +31,8 @@
     rememberLayout: false,
     videoOnRight: false,
     descOnPause: false,
+    speedRate: "1.5", // "My speed", a string from the panel dropdown
+    speedOn: false, // switched by S and the speed button in the player
   };
   let settings = { ...DEFAULT_SETTINGS };
   // "Side pane width" presets: the side pane's default share of the layout.
@@ -1946,6 +1949,154 @@
     if (button.nextElementSibling !== settingsButton) settingsButton.before(button);
   }
 
+  // ---- My speed ----
+  // "My speed" in the panel (speedRate) and an on/off state (speedOn) that
+  // the S key and the speed button in the player switch. While on, each new
+  // video (and a refresh) starts at that speed, because YouTube goes back to
+  // 1x after a reload. Off sets normal speed. Applied once per video, so a
+  // speed picked in YouTube's own menu stays for the rest of that video. Not
+  // during an ad, and not on live streams (`.ytp-live`, from memory).
+  // Works on any watch page, also in theater mode and small windows.
+  const SPEED_BUTTON_ID = "yt-split-speed-button";
+  const SPEED_TOAST_ID = "yt-split-speed-toast";
+  let speedAppliedFor = null;
+  let speedToastTimer = null;
+
+  function mySpeed() {
+    const rate = Number(settings.speedRate);
+    return Number.isFinite(rate) && rate > 0 ? rate : 1.5;
+  }
+
+  function speedLabel(rate) {
+    return rate + "×";
+  }
+
+  function speedAllowed() {
+    return settings.splitEnabled && windowRole !== "companion" && isWatchPage();
+  }
+
+  function currentWatchId() {
+    return new URLSearchParams(location.search).get("v");
+  }
+
+  function speedVideo() {
+    const video = watchRoot().querySelector("#movie_player video");
+    return video && video.readyState >= 1 ? video : null;
+  }
+
+  function isAdPlaying() {
+    const player = watchRoot().querySelector("#movie_player");
+    return !!player && (player.classList.contains("ad-showing") || player.classList.contains("ad-interrupting"));
+  }
+
+  // Through YouTube's player (src/page.js), so its speed menu agrees; the
+  // element itself as a fallback.
+  function setVideoSpeed(video, rate) {
+    document.dispatchEvent(new CustomEvent("ytsplit:set-playback-rate", { detail: String(rate) }));
+    if (video.playbackRate !== rate) video.playbackRate = rate;
+  }
+
+  // From the 500ms watchdog and the video's "playing" event.
+  function maybeApplyMySpeed() {
+    if (!settings.speedOn || !speedAllowed()) return;
+    const id = currentWatchId();
+    if (!id || id === speedAppliedFor) return;
+    const video = speedVideo();
+    if (!video || video.paused || isAdPlaying()) return;
+    speedAppliedFor = id;
+    if (watchRoot().querySelector("#movie_player .ytp-live")) return;
+    setVideoSpeed(video, mySpeed());
+    // YouTube's own player setup can reset the speed just after the start.
+    setTimeout(() => {
+      if (settings.speedOn && speedAppliedFor === id && currentWatchId() === id && !isAdPlaying()) {
+        setVideoSpeed(video, mySpeed());
+      }
+    }, 800);
+  }
+
+  function toggleMySpeed() {
+    if (!speedAllowed()) return;
+    const on = !settings.speedOn;
+    settings.speedOn = on;
+    try {
+      chrome.storage.local.set({ speedOn: on }).catch(() => {});
+    } catch (e) {
+      // extension context gone; still change this video
+    }
+    const video = speedVideo();
+    const rate = on ? mySpeed() : 1;
+    if (video && !isAdPlaying()) {
+      setVideoSpeed(video, rate);
+      speedAppliedFor = currentWatchId();
+    } else {
+      speedAppliedFor = null; // applied when the ad ends (if on)
+    }
+    updateSpeedButton();
+    showSpeedToast(on ? speedLabel(rate) + " on" : "Normal speed");
+  }
+
+  function showSpeedToast(text) {
+    const player = watchRoot().querySelector("#movie_player");
+    if (!player) return;
+    let toast = document.getElementById(SPEED_TOAST_ID);
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = SPEED_TOAST_ID;
+      toast.setAttribute("role", "status");
+    }
+    if (toast.parentNode !== player) player.appendChild(toast);
+    toast.textContent = text;
+    // Restart the fade when pressed again quickly.
+    toast.classList.remove("is-shown");
+    void toast.offsetWidth;
+    toast.classList.add("is-shown");
+    clearTimeout(speedToastTimer);
+    speedToastTimer = setTimeout(() => toast.classList.remove("is-shown"), 1200);
+  }
+
+  function buildSpeedButton() {
+    const button = document.createElement("button");
+    button.id = SPEED_BUTTON_ID;
+    button.className = "ytp-button";
+    const label = document.createElement("span");
+    label.className = "yt-split-speed-label";
+    button.appendChild(label);
+    // No focus on a mouse click, so the spacebar still plays/pauses.
+    button.addEventListener("mousedown", (e) => e.preventDefault());
+    button.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleMySpeed();
+    });
+    return button;
+  }
+
+  // Called by the 500ms watchdog (after updatePipButton): keeps the button
+  // just before the picture-in-picture button, or before the settings button.
+  function updateSpeedButton() {
+    const settingsButton = speedAllowed()
+      ? watchRoot().querySelector("#movie_player .ytp-right-controls .ytp-settings-button")
+      : null;
+    let button = document.getElementById(SPEED_BUTTON_ID);
+    if (!settingsButton) {
+      if (button) button.remove();
+      return;
+    }
+    if (!button) button = buildSpeedButton();
+    const pip = document.getElementById(PIP_BUTTON_ID);
+    const anchor = pip && pip.parentNode === settingsButton.parentNode ? pip : settingsButton;
+    if (button.nextElementSibling !== anchor) anchor.before(button);
+    const text = speedLabel(mySpeed());
+    const on = !!settings.speedOn;
+    if (button.firstChild.textContent !== text) button.firstChild.textContent = text;
+    button.classList.toggle("is-on", on);
+    button.setAttribute("aria-pressed", String(on));
+    const tip = on ? "Back to normal speed (S)" : "Play at " + text + " (S)";
+    if (button.title !== tip) {
+      button.title = tip;
+      button.setAttribute("aria-label", tip);
+    }
+  }
+
   function updateShortsGlow() {
     const html = document.documentElement;
     const host = isShortsPage() ? shortsHost() : null;
@@ -2044,11 +2195,11 @@
   // not the manifest version, so small fixes don't nag. New installs get
   // the first-run hint only: dismissing it marks this note seen too.
   const WHATS_NEW = {
-    version: "1.13",
+    version: "1.14",
     tips: [
       "New keys: D opens the description, R opens Recommended, [ and ] move the divider. Press ? to see them all.",
       "Want to read while you pause? Turn on \"Open description on pause\" behind the toolbar icon.",
-      "The closed Description bar now shows the video title under its name.",
+      "Watch faster? Pick \"My speed\" behind the toolbar icon, then press S on a video. New videos keep it until you press S again.",
     ],
   };
 
@@ -3319,14 +3470,20 @@
   //   [ / ]  move the main divider left / right (held down: keeps moving)
   //   ?      show or hide the list of Glowpane keys (YouTube shows its own
   //          list on the same key, in the middle of the page)
+  //   S      switch "My speed" on or off (also without the split: theater
+  //          mode, small windows)
   // Not with Ctrl / Cmd / Alt, and not while typing.
-  const PAGE_KEYS = new Set(["d", "D", "r", "R", "[", "]", "?"]);
+  const PAGE_KEYS = new Set(["d", "D", "r", "R", "[", "]", "?", "s", "S"]);
 
   function onPageKey(e) {
     if (!PAGE_KEYS.has(e.key) || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
     const origin = e.composedPath ? e.composedPath()[0] : null;
     if (isTypingTarget(e.target) || isTypingTarget(origin)) return;
     if (!settings.splitEnabled || !isWatchPage()) return;
+    if (e.key === "s" || e.key === "S") {
+      if (!e.repeat) toggleMySpeed();
+      return;
+    }
     if (!document.documentElement.classList.contains("yt-split-active")) return;
     if (e.key === "[" || e.key === "]") {
       if (nudgeMainDivider(e.key === "[" ? -1 : 1)) e.preventDefault();
@@ -3420,6 +3577,7 @@
     addKeyRow(pageList, ["D"], "Open or close the description");
     addKeyRow(pageList, ["R"], "Open or close Recommended (or live chat)");
     addKeyRow(pageList, ["[", "]"], "Move the divider");
+    addKeyRow(pageList, ["S"], "Switch my speed on or off");
     addKeyRow(pageList, ["?"], "Show or hide this list");
     const sub = document.createElement("div");
     sub.className = "yt-split-keys-sub";
@@ -3501,6 +3659,8 @@
       return;
     }
     if (!Number.isFinite(rate) || rate <= 0 || rate === 1) return;
+    // This speed came from the other window: "My speed" leaves it alone.
+    speedAppliedFor = currentWatchId();
     const apply = () => {
       document.dispatchEvent(new CustomEvent("ytsplit:set-playback-rate", { detail: String(rate) }));
       // Fallback if the page-world helper isn't there: set the element.
@@ -3528,6 +3688,7 @@
     video.addEventListener("play", exitRecsFocusMode);
     video.addEventListener("pause", onVideoPauseForDesc);
     video.addEventListener("play", onVideoPlayForDesc);
+    video.addEventListener("playing", maybeApplyMySpeed);
     // If our early sizing calls ran before the video's own intrinsic
     // dimensions were available (measureVideoAspectRatio then had to use
     // the less accurate, CSS-manipulating fallback), redo them now that
@@ -3947,6 +4108,8 @@
     watchdogWasWatching = watching;
     updateShortsGlow();
     updatePipButton();
+    updateSpeedButton();
+    maybeApplyMySpeed();
   }, 500);
 
   // Back/forward-button navigation doesn't always fire YouTube's own
@@ -4172,6 +4335,12 @@
       }
       if (changes.ambientEnabled || changes.ambientStrength || changes.ambientStrengthLight) applyAmbientSettings();
       if (changes.paneTransparency) applyPaneTransparency();
+      if (changes.speedRate && settings.speedOn && speedAllowed()) {
+        // A new speed picked while it is on: use it on this video now.
+        const video = speedVideo();
+        if (video && !isAdPlaying()) setVideoSpeed(video, mySpeed());
+      }
+      if (changes.speedRate || changes.speedOn) updateSpeedButton();
       // Applied in place (no start()), so a dragged divider survives.
       const paneChange =
         changes.showDescription || changes.showRecommendations || changes.showComments;

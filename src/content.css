@@ -1728,6 +1728,57 @@ html.yt-split-active #yt-split-keys {
   }
 }
 
+/* "My speed" button in the player's control bar (any watch page, also
+   without the split) and the short note that shows when it changes. */
+#yt-split-speed-button {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: auto !important;
+  min-width: 48px;
+  padding: 0 4px !important;
+}
+
+#yt-split-speed-button .yt-split-speed-label {
+  padding: 3px 5px;
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  border-radius: 4px;
+  color: #fff;
+  font: 600 13px/1 "Roboto", "Arial", sans-serif;
+  opacity: 0.8;
+}
+
+#yt-split-speed-button:hover .yt-split-speed-label {
+  opacity: 1;
+}
+
+#yt-split-speed-button.is-on .yt-split-speed-label {
+  border-color: #fff;
+  background: #fff;
+  color: #0f0f0f;
+  opacity: 1;
+}
+
+#yt-split-speed-toast {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  z-index: 70;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font: 600 16px/1.2 "Roboto", "Arial", sans-serif;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-50%);
+  transition: opacity 0.15s ease;
+}
+
+#yt-split-speed-toast.is-shown {
+  opacity: 1;
+}
+
 /* Fail-safe note (content.js "Fail-safe"), also used by the one-time
    rating card (content.js "Rating request"). Both can show while the split
    is off, so they can't use the --split-* tokens (they only exist while

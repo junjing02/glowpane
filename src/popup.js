@@ -15,6 +15,7 @@ const DEFAULTS = {
   rememberLayout: false,
   videoOnRight: false,
   descOnPause: false,
+  speedRate: "1.5",
 };
 
 const controls = Object.fromEntries(Object.keys(DEFAULTS).map((key) => [key, document.getElementById(key)]));
