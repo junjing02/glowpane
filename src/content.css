@@ -731,31 +731,44 @@ html.yt-split-active .yt-split-desc-header {
 
 html.yt-split-active .yt-split-desc-header::after {
   content: "\25B8"; /* ▸ */
+  order: 1;
   flex: none;
   margin-left: 10px;
   transition: transform 0.15s ease;
 }
 
-/* "Description", then the video title on one line while the pane is
-   closed (content.js currentVideoTitle). */
+/* While the pane is closed, the video title shows on its own line under
+   "Description" (content.js currentVideoTitle), at most two lines. The
+   header wraps: label and arrow on the first line, the title (100% wide,
+   order 2) under them. Hidden while open: the full title is in the pane. */
+html.yt-split-active .yt-split-desc-header {
+  flex-wrap: wrap;
+}
+
 html.yt-split-active .yt-split-desc-label {
-  flex: none;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 html.yt-split-active .yt-split-desc-peek {
-  flex: 1 1 auto;
-  min-width: 0;
-  margin-left: 12px;
+  order: 2;
+  flex: 0 0 100%;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 13px;
+  margin-top: 6px;
+  font-size: 14px;
   font-weight: 500;
+  line-height: 1.35;
   letter-spacing: normal;
   text-transform: none;
+  overflow-wrap: anywhere;
   color: var(--split-text);
 }
 
+html.yt-split-active .yt-split-desc-peek:empty,
 html.yt-split-active #yt-split-desc-pane.yt-split-desc-expanded .yt-split-desc-peek {
   display: none;
 }
