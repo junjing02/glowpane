@@ -155,7 +155,7 @@ if (morphDemo) {
     const SCROLL = "Scroll freely — the video stays put";
     const DRAG = "Drag the divider to resize";
     const COLLAPSE = "Collapse what you don't need";
-    const READ = "Press D to read the description";
+    const READ = "Press E to read the description";
     const SPEED = "Press S: your speed, on every video";
     // cls: the complete set of state classes for the step. hold: ms before
     // the next step. Pane/cursor moves take 0.85s (style.css), so holds

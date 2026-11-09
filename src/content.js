@@ -2195,9 +2195,9 @@
   // not the manifest version, so small fixes don't nag. New installs get
   // the first-run hint only: dismissing it marks this note seen too.
   const WHATS_NEW = {
-    version: "1.14",
+    version: "1.14.1",
     tips: [
-      "New keys: D opens the description, R opens Recommended, [ and ] move the divider. Press ? to see them all.",
+      "The description key is now E (D clashed with keyboard extensions like Vimium). R opens Recommended, [ and ] move the divider, ? shows every key.",
       "Want to read while you pause? Turn on \"Open description on pause\" behind the toolbar icon.",
       "Watch faster? Pick \"My speed\" behind the toolbar icon, then press S on a video. New videos keep it until you press S again.",
     ],
@@ -3414,9 +3414,11 @@
 
   // ---- Description shortcuts ----
   // By request: opening the description took a trip to the mouse.
-  // 1. The D key (no modifiers, not while typing) opens or closes it, like
-  //    YouTube's own one-key shortcuts (YouTube doesn't use D). With the
-  //    side pane closed (video only), D opens the pane too.
+  // 1. The E key (no modifiers, not while typing) opens or closes it, like
+  //    YouTube's own one-key shortcuts. With the side pane closed (video
+  //    only), E opens the pane too. It was D until 1.14.1: Vimium / Vimium C
+  //    take d (scroll down) before the page sees it. E is free in YouTube's
+  //    list and in Vimium C's default keys (checked in its key_mappings.ts).
   // 2. "Open description on pause" (settings.descOnPause, off by default):
   //    a pause that lasts PAUSE_DESC_DELAY_MS opens it (so a quick pause /
   //    play doesn't flicker), and playing again closes it, which brings
@@ -3465,7 +3467,7 @@
   // ---- Page keys ----
   // One-key shortcuts on the watch page while the split is on, like
   // YouTube's own (which, from memory, don't use any of these):
-  //   D      open or close the description
+  //   E      open or close the description (was D: Vimium uses d)
   //   R      open or close Recommended (or the live chat)
   //   [ / ]  move the main divider left / right (held down: keeps moving)
   //   ?      show or hide the list of Glowpane keys (YouTube shows its own
@@ -3473,7 +3475,7 @@
   //   S      switch "My speed" on or off (also without the split: theater
   //          mode, small windows)
   // Not with Ctrl / Cmd / Alt, and not while typing.
-  const PAGE_KEYS = new Set(["d", "D", "r", "R", "[", "]", "?", "s", "S"]);
+  const PAGE_KEYS = new Set(["e", "E", "r", "R", "[", "]", "?", "s", "S"]);
 
   function onPageKey(e) {
     if (!PAGE_KEYS.has(e.key) || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
@@ -3491,7 +3493,7 @@
     }
     if (e.repeat) return;
     if (e.key === "?") toggleKeysCard();
-    else if (e.key === "d" || e.key === "D") toggleDescriptionByKey();
+    else if (e.key === "e" || e.key === "E") toggleDescriptionByKey();
     else toggleRecommendedByKey();
   }
   document.addEventListener("keydown", onPageKey, true);
@@ -3574,7 +3576,7 @@
     close.addEventListener("click", hideKeysCard);
     head.append(title, close);
     const pageList = document.createElement("dl");
-    addKeyRow(pageList, ["D"], "Open or close the description");
+    addKeyRow(pageList, ["E"], "Open or close the description");
     addKeyRow(pageList, ["R"], "Open or close Recommended (or live chat)");
     addKeyRow(pageList, ["[", "]"], "Move the divider");
     addKeyRow(pageList, ["S"], "Switch my speed on or off");
