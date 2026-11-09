@@ -1266,9 +1266,9 @@
       header = document.createElement("button");
       header.type = "button";
       header.className = "yt-split-pane-header yt-split-desc-header";
-      // "Description", then the video title while the pane is closed
-      // (content.css hides it when open), so the title shows without
-      // opening the pane.
+      // "Description", with the video title under it while the pane is
+      // closed (content.css: up to two lines, hidden when open), so the
+      // title shows without opening the pane.
       const label = document.createElement("span");
       label.className = "yt-split-desc-label";
       label.textContent = "Description";
@@ -2048,7 +2048,7 @@
     tips: [
       "New keys: D opens the description, R opens Recommended, [ and ] move the divider. Press ? to see them all.",
       "Want to read while you pause? Turn on \"Open description on pause\" behind the toolbar icon.",
-      "The closed Description bar now shows the video title.",
+      "The closed Description bar now shows the video title under its name.",
     ],
   };
 
