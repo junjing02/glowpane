@@ -175,6 +175,11 @@ async function handle(msg, sender) {
         notify(pair.mainTabId, { type: "seek", seconds: msg.seconds });
       }
       return null;
+    case "getCommands": {
+      // For the "?" list of keys in the page (content.js "Page keys").
+      const commands = await chrome.commands.getAll();
+      return commands.map((c) => ({ name: c.name, shortcut: c.shortcut || "" }));
+    }
     default:
       return null;
   }

@@ -804,6 +804,33 @@
     if (strip.parentElement !== columns) columns.appendChild(strip);
   }
 
+  // Moves the main divider one step left (-1) or right (1) on screen, as
+  // the divider's arrow keys and the [ / ] page keys do. False when the
+  // divider isn't on screen.
+  function nudgeMainDivider(screenDir, columns) {
+    const resizer = document.getElementById("yt-split-resizer");
+    const sidePane = document.getElementById("yt-split-side-pane");
+    columns = columns || watchRoot().querySelector("#columns");
+    if (!resizer || !sidePane || !columns || !resizer.getClientRects().length) return false;
+    const rect = columns.getBoundingClientRect();
+    // Moving the divider left widens the side pane when it's on the
+    // right, and narrows it when the columns are swapped.
+    const grow = (screenDir < 0) !== isSwapped();
+    const px = clampSideWidth(sidePane.getBoundingClientRect().width + (grow ? 24 : -24), rect);
+    setSideWidth(px);
+    nudgePlayerResize();
+    enforceMinVideoHeight();
+    preventColumnOverlap();
+    hasManualSideWidth = true;
+    if (rect.width > 0) manualSideWidthRatio = px / rect.width;
+    manualSidePin = sidePinFor(px, rect);
+    inRecsFocusMode = false;
+    preFocusLayout = null;
+    sideOpenedForEnd = false;
+    saveLayout();
+    return true;
+  }
+
   function onDocumentMouseMove(e) {
     if (!dragState) return;
     // rect is captured once at mousedown (see setupResizer) rather than
@@ -948,26 +975,10 @@
     resizer.tabIndex = 0;
     resizer.addEventListener("keydown", (e) => {
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-      const sidePane = document.getElementById("yt-split-side-pane");
-      if (!sidePane) return;
+      if (!document.getElementById("yt-split-side-pane")) return;
       e.preventDefault();
       e.stopPropagation();
-      const rect = columns.getBoundingClientRect();
-      // Left arrow moves the divider left: wider side pane when it's on
-      // the right, narrower when the columns are swapped.
-      const grow = (e.key === "ArrowLeft") !== isSwapped();
-      const px = clampSideWidth(sidePane.getBoundingClientRect().width + (grow ? 24 : -24), rect);
-      setSideWidth(px);
-      nudgePlayerResize();
-      enforceMinVideoHeight();
-      preventColumnOverlap();
-      hasManualSideWidth = true;
-      if (rect.width > 0) manualSideWidthRatio = px / rect.width;
-      manualSidePin = sidePinFor(px, rect);
-      inRecsFocusMode = false;
-      preFocusLayout = null;
-      sideOpenedForEnd = false;
-      saveLayout();
+      nudgeMainDivider(e.key === "ArrowLeft" ? -1 : 1, columns);
     });
     // Double-click: back to the automatic default width.
     resizer.addEventListener("dblclick", () => {
@@ -1227,6 +1238,15 @@
     saveLayout();
   }
 
+  // The video title from YouTube's own heading in #below, else the tab
+  // title without YouTube's " - YouTube" and "(3) " notification prefix.
+  function currentVideoTitle() {
+    const heading = document.querySelector("#yt-split-desc-body #above-the-fold #title h1");
+    const text = heading ? heading.textContent.replace(/\s+/g, " ").trim() : "";
+    if (text) return text;
+    return document.title.replace(/^\(\d+\)\s*/, "").replace(/\s*-\s*YouTube$/, "").trim();
+  }
+
   // Builds the collapsed-by-default description section at the top of the
   // side pane: a small clickable header (title/channel/stats/description
   // all live inside #below, moved wholesale) that expands in place on
@@ -1246,7 +1266,15 @@
       header = document.createElement("button");
       header.type = "button";
       header.className = "yt-split-pane-header yt-split-desc-header";
-      header.textContent = "Description";
+      // "Description", then the video title while the pane is closed
+      // (content.css hides it when open), so the title shows without
+      // opening the pane.
+      const label = document.createElement("span");
+      label.className = "yt-split-desc-label";
+      label.textContent = "Description";
+      const peek = document.createElement("span");
+      peek.className = "yt-split-desc-peek";
+      header.append(label, peek);
       // Buttons take keyboard focus on click by default. Left alone, that
       // meant any spacebar press AFTER clicking this header (an entirely
       // normal thing to do while rearranging panes) would hit the browser's
@@ -1266,6 +1294,11 @@
 
     if (descExpanded) pane.classList.add("yt-split-desc-expanded");
     header.setAttribute("aria-expanded", String(pane.classList.contains("yt-split-desc-expanded")));
+    const peek = header.querySelector(".yt-split-desc-peek");
+    if (peek) {
+      const title = currentVideoTitle();
+      if (peek.textContent !== title) peek.textContent = title;
+    }
 
     let body = document.getElementById("yt-split-desc-body");
     if (!body) {
@@ -2013,9 +2046,9 @@
   const WHATS_NEW = {
     version: "1.13",
     tips: [
-      "Press D to open or close the description. No need to reach for the mouse.",
+      "New keys: D opens the description, R opens Recommended, [ and ] move the divider. Press ? to see them all.",
       "Want to read while you pause? Turn on \"Open description on pause\" behind the toolbar icon.",
-      "Drag the divider to the window edge to hide the side pane: a hint now shows when to let go.",
+      "The closed Description bar now shows the video title.",
     ],
   };
 
@@ -2801,6 +2834,7 @@
       DESC_FILL_CLASS
     );
     hideWelcome();
+    hideKeysCard();
     if (sidePaneObserver) sidePaneObserver.disconnect();
     sidePaneObserver = null;
     observedSidePane = null;
@@ -3277,20 +3311,155 @@
     saveLayout();
   }
 
+  // ---- Page keys ----
+  // One-key shortcuts on the watch page while the split is on, like
+  // YouTube's own (which, from memory, don't use any of these):
+  //   D      open or close the description
+  //   R      open or close Recommended (or the live chat)
+  //   [ / ]  move the main divider left / right (held down: keeps moving)
+  //   ?      show or hide the list of Glowpane keys (YouTube shows its own
+  //          list on the same key, in the middle of the page)
+  // Not with Ctrl / Cmd / Alt, and not while typing.
+  const PAGE_KEYS = new Set(["d", "D", "r", "R", "[", "]", "?"]);
+
+  function onPageKey(e) {
+    if (!PAGE_KEYS.has(e.key) || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+    const origin = e.composedPath ? e.composedPath()[0] : null;
+    if (isTypingTarget(e.target) || isTypingTarget(origin)) return;
+    if (!settings.splitEnabled || !isWatchPage()) return;
+    if (!document.documentElement.classList.contains("yt-split-active")) return;
+    if (e.key === "[" || e.key === "]") {
+      if (nudgeMainDivider(e.key === "[" ? -1 : 1)) e.preventDefault();
+      return;
+    }
+    if (e.repeat) return;
+    if (e.key === "?") toggleKeysCard();
+    else if (e.key === "d" || e.key === "D") toggleDescriptionByKey();
+    else toggleRecommendedByKey();
+  }
+  document.addEventListener("keydown", onPageKey, true);
+
+  function toggleDescriptionByKey() {
+    const pane = document.getElementById("yt-split-desc-pane");
+    if (!pane || !settings.showDescription) return;
+    if (sideClosed && windowRole === "none") setSideClosed(false);
+    descOpenedForPause = false;
+    setDescriptionOpen(!pane.classList.contains("yt-split-desc-expanded"));
+  }
+
+  // Same as a click on the pane's title. With the side pane closed (video
+  // only), opens the side pane with Recommended open.
+  function toggleRecommendedByKey() {
+    const find = () => document.querySelector("#yt-split-side-pane > #secondary");
+    let reopened = false;
+    if (sideClosed && windowRole === "none") {
+      setSideClosed(false);
+      reopened = true;
+    }
+    const secondary = find();
+    if (!secondary || !secondary.getClientRects().length) return;
+    if (reopened && !secondary.classList.contains("yt-split-pane-collapsed")) return;
+    const header = secondary.querySelector(":scope > .yt-split-pane-header");
+    if (header) header.click();
+  }
+
+  // The "?" list. The four browser-wide shortcuts come from the background
+  // worker (chrome.commands), so a key the user changed shows as it is.
+  const KEYS_CARD_ID = "yt-split-keys";
+  const COMMAND_LABELS = {
+    "toggle-split": "Turn the split on or off",
+    "toggle-two-windows": "Turn Two windows on or off",
+    "toggle-video-only": "Hide or show the side pane",
+    "toggle-pip": "Picture-in-picture",
+  };
+
+  function hideKeysCard() {
+    const card = document.getElementById(KEYS_CARD_ID);
+    if (card) card.remove();
+  }
+
+  function addKeyRow(list, keys, text) {
+    const dt = document.createElement("dt");
+    if (keys.length) {
+      for (const key of keys) {
+        const kbd = document.createElement("kbd");
+        kbd.textContent = key;
+        dt.appendChild(kbd);
+      }
+    } else {
+      dt.className = "yt-split-keys-unset";
+      dt.textContent = "Not set";
+    }
+    const dd = document.createElement("dd");
+    dd.textContent = text;
+    list.append(dt, dd);
+  }
+
+  function toggleKeysCard() {
+    if (document.getElementById(KEYS_CARD_ID)) {
+      hideKeysCard();
+      return;
+    }
+    const card = document.createElement("div");
+    card.id = KEYS_CARD_ID;
+    card.setAttribute("role", "dialog");
+    card.setAttribute("aria-label", "Glowpane keys");
+    const head = document.createElement("div");
+    head.className = "yt-split-keys-head";
+    const title = document.createElement("span");
+    title.textContent = "Glowpane keys";
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "yt-split-keys-close";
+    close.setAttribute("aria-label", "Close");
+    close.textContent = "\u00d7";
+    close.addEventListener("mousedown", (e) => e.preventDefault());
+    close.addEventListener("click", hideKeysCard);
+    head.append(title, close);
+    const pageList = document.createElement("dl");
+    addKeyRow(pageList, ["D"], "Open or close the description");
+    addKeyRow(pageList, ["R"], "Open or close Recommended (or live chat)");
+    addKeyRow(pageList, ["[", "]"], "Move the divider");
+    addKeyRow(pageList, ["?"], "Show or hide this list");
+    const sub = document.createElement("div");
+    sub.className = "yt-split-keys-sub";
+    sub.textContent = "In any tab";
+    const commandList = document.createElement("dl");
+    const note = document.createElement("p");
+    note.className = "yt-split-keys-note";
+    note.textContent = "Change these at chrome://extensions/shortcuts";
+    card.append(head, pageList, sub, commandList, note);
+    document.body.appendChild(card);
+    try {
+      chrome.runtime
+        .sendMessage({ type: "getCommands" })
+        .then((commands) => {
+          if (!card.isConnected || !Array.isArray(commands)) return;
+          for (const command of commands) {
+            const label = COMMAND_LABELS[command.name];
+            if (label) addKeyRow(commandList, command.shortcut ? [command.shortcut] : [], label);
+          }
+        })
+        .catch(() => {});
+    } catch (err) {
+      // extension reloaded: the page keys still show
+    }
+  }
+
+  // Esc or a click outside closes the list (YouTube's own list closes the
+  // same way).
   document.addEventListener(
     "keydown",
     (e) => {
-      if (e.key !== "d" && e.key !== "D") return;
-      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || e.isComposing) return;
-      const origin = e.composedPath ? e.composedPath()[0] : null;
-      if (isTypingTarget(e.target) || isTypingTarget(origin)) return;
-      if (!settings.splitEnabled || !isWatchPage()) return;
-      if (!document.documentElement.classList.contains("yt-split-active")) return;
-      const pane = document.getElementById("yt-split-desc-pane");
-      if (!pane || !settings.showDescription) return;
-      if (sideClosed && windowRole === "none") setSideClosed(false);
-      descOpenedForPause = false;
-      setDescriptionOpen(!pane.classList.contains("yt-split-desc-expanded"));
+      if (e.key === "Escape") hideKeysCard();
+    },
+    true
+  );
+  document.addEventListener(
+    "pointerdown",
+    (e) => {
+      const card = document.getElementById(KEYS_CARD_ID);
+      if (card && !card.contains(e.target)) hideKeysCard();
     },
     true
   );

@@ -731,7 +731,33 @@ html.yt-split-active .yt-split-desc-header {
 
 html.yt-split-active .yt-split-desc-header::after {
   content: "\25B8"; /* ▸ */
+  flex: none;
+  margin-left: 10px;
   transition: transform 0.15s ease;
+}
+
+/* "Description", then the video title on one line while the pane is
+   closed (content.js currentVideoTitle). */
+html.yt-split-active .yt-split-desc-label {
+  flex: none;
+}
+
+html.yt-split-active .yt-split-desc-peek {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-left: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--split-text);
+}
+
+html.yt-split-active #yt-split-desc-pane.yt-split-desc-expanded .yt-split-desc-peek {
+  display: none;
 }
 
 html.yt-split-active #yt-split-desc-pane.yt-split-desc-expanded .yt-split-desc-header::after {
@@ -1580,6 +1606,113 @@ html.yt-split-active.yt-split-wide-side
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+}
+
+/* The "?" list of Glowpane keys (content.js "Page keys"). Bottom left, so
+   it doesn't cover YouTube's own list in the middle or the first-run card
+   at the bottom right. */
+html.yt-split-active #yt-split-keys {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  z-index: 2400;
+  width: 320px;
+  padding: 12px 18px 14px;
+  border: 1px solid var(--split-border-strong);
+  border-radius: 14px;
+  background: var(--split-bg);
+  color: var(--split-text);
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.5);
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  animation: yt-split-fade-in 0.2s ease;
+}
+
+#yt-split-keys .yt-split-keys-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+#yt-split-keys .yt-split-keys-close {
+  all: unset;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-right: -8px;
+  border-radius: 50%;
+  color: var(--split-text-dim);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#yt-split-keys .yt-split-keys-close:hover,
+#yt-split-keys .yt-split-keys-close:focus-visible {
+  background: var(--split-border);
+  color: var(--split-text);
+}
+
+#yt-split-keys dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0;
+}
+
+#yt-split-keys dt {
+  display: flex;
+  gap: 4px;
+  margin: 0;
+}
+
+#yt-split-keys dd {
+  margin: 0;
+  color: var(--split-text-dim);
+}
+
+#yt-split-keys kbd {
+  min-width: 24px;
+  padding: 1px 7px;
+  box-sizing: border-box;
+  border: 1px solid var(--split-border-strong);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  color: var(--split-text);
+  font: 600 12px/1.5 Roboto, Arial, sans-serif;
+  text-align: center;
+}
+
+#yt-split-keys .yt-split-keys-unset {
+  color: var(--split-text-dim);
+  font-size: 12px;
+}
+
+#yt-split-keys .yt-split-keys-sub {
+  margin: 14px 0 8px;
+  color: var(--split-text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+#yt-split-keys .yt-split-keys-note {
+  margin: 12px 0 0;
+  color: var(--split-text-dim);
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.yt-split-active #yt-split-keys {
+    animation: none;
+  }
 }
 
 /* Fail-safe note (content.js "Fail-safe"), also used by the one-time
