@@ -1519,9 +1519,13 @@
   //      edges.
   //   3. The frame is blurred into the visible canvas (cheap at this size)
   //      and blended over the previous one (AMBIENT_BLEND) to smooth
-  //      flicker without noticeable lag. CSS adds a little more blur plus
-  //      brightness/saturation (--split-ambient-* tokens in content.css),
-  //      and a separate grain layer hides color banding.
+  //      flicker without noticeable lag. The same canvas filter adds the
+  //      saturation; a separate grain layer hides color banding.
+  //   Performance: all blur and color work happens in that small canvas.
+  //   A CSS filter on the full-window layer (the old version: 40px blur,
+  //   on 4K at 2x about 30 million pixels per frame) made the GPU redo it on
+  //   every frame, competing with the video itself (reported: video lag).
+  //   Don't put a CSS filter back on #yt-split-ambient.
   // The extension's "Ambient light" switch turns it on and off; YouTube's
   // own "Ambient mode" toggle sets that switch too (see "Ambient mode
   // toggle" below). YouTube's native glow is hidden (content.css). Replaces an earlier
@@ -1534,15 +1538,15 @@
   const AMBIENT_SAMPLE_W = 64;
   const AMBIENT_SAMPLE_H = 36;
   const AMBIENT_CANVAS_SCALE = 1 / 8; // canvas px per CSS px
-  const AMBIENT_CANVAS_BLUR = 7; // in canvas px (~56 CSS px)
+  const AMBIENT_CANVAS_BLUR = 9; // in canvas px (~72 CSS px; was 7 + a 40px CSS blur)
   // Light theme (see tintSampleForLightTheme): overall tint strength, and
   // how much the video's colors are saturated before tinting.
   const AMBIENT_LIGHT_AMOUNT = 0.95;
   const AMBIENT_LIGHT_SATURATION = 1.7;
   const AMBIENT_LIGHT_LIFT = "rgb(120, 120, 120)"; // fallback only: screen-blend lift toward white
   const AMBIENT_LEVELS = 12;
-  const AMBIENT_BLEND = 0.5; // weight of each new frame over the previous
-  const AMBIENT_FRAME_MS = 1000 / 30;
+  const AMBIENT_BLEND = 0.6; // weight of each new frame over the previous
+  const AMBIENT_FRAME_MS = 1000 / 20; // a blurred glow looks the same at 20fps
   // With the system's "reduce motion" setting on, the glow updates a few
   // times a second and eases in slowly, so it drifts instead of flickering
   // along with every cut.
@@ -1799,7 +1803,9 @@
     a.ctx.save();
     if (a.fresh) a.ctx.clearRect(0, 0, W, H);
     a.ctx.globalAlpha = a.fresh ? 1 : reducedMotion.matches ? AMBIENT_CALM_BLEND : AMBIENT_BLEND;
-    a.ctx.filter = `blur(${AMBIENT_CANVAS_BLUR}px)`;
+    // Dark theme: +30% saturation (the old CSS saturate(1.3)). Light theme:
+    // tintSampleForLightTheme() already did the color work.
+    a.ctx.filter = light ? `blur(${AMBIENT_CANVAS_BLUR}px)` : `blur(${AMBIENT_CANVAS_BLUR}px) saturate(1.3)`;
     a.ctx.drawImage(a.frame, 0, 0);
     a.ctx.restore();
     a.fresh = false;

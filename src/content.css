@@ -43,14 +43,11 @@ html.yt-split-active {
   /* Ambient light (our own renderer: content.js "Ambient light" section,
      styled by #yt-split-ambient below). */
   --split-ambient-opacity: 0.7; /* overall strength, 0-1 */
-  --split-ambient-brightness: 1;
-  --split-ambient-saturate: 1.3;
-  --split-ambient-blur: 40px; /* extra softening on top of the canvas blur */
   --split-ambient-grain: 0.35; /* anti-banding grain, 0 = off */
   /* How far the glow extends past the window on each side, so the blurred
-     canvas edges fade out off-screen. Keep it above ~3x the combined blur
-     (sqrt(canvas blur^2 + --split-ambient-blur^2); the canvas blur is
-     AMBIENT_CANVAS_BLUR in content.js, ~56px): ~210px at the defaults. */
+     canvas edges fade out off-screen. Keep it above ~3x the blur
+     (AMBIENT_CANVAS_BLUR in content.js, ~72 CSS px): ~216px. The blur and
+     saturation are done in the canvas, not with a CSS filter (GPU cost). */
   --split-ambient-overscan: 260px;
 }
 
@@ -65,9 +62,8 @@ html.yt-split-active:not([dark]) {
   /* Ambient light in light theme (an addition over YouTube, which has no
      Ambient mode here): content.js turns the sampled colors into tints
      over white (tintSampleForLightTheme), which does the color work
-     itself, so no extra saturation here. Much less grain (it reads as
-     dirt on white). */
-  --split-ambient-saturate: 1;
+     itself (no extra saturation in the canvas filter either). Much less
+     grain (it reads as dirt on white). */
   --split-ambient-grain: 0.1;
 }
 
@@ -76,16 +72,12 @@ html.yt-split-active:not([dark]) {
    these in step with the two blocks above. */
 html.yt-shorts-glow {
   --split-ambient-opacity: 0.7;
-  --split-ambient-brightness: 1;
-  --split-ambient-saturate: 1.3;
-  --split-ambient-blur: 40px;
   --split-ambient-grain: 0.35;
   --split-ambient-overscan: 260px;
   --split-pane-bg: rgba(33, 33, 33, var(--split-pane-alpha, 0.6));
 }
 
 html.yt-shorts-glow:not([dark]) {
-  --split-ambient-saturate: 1;
   --split-ambient-grain: 0.1;
   --split-pane-bg: rgba(242, 242, 242, var(--split-pane-alpha, 0.6));
 }
@@ -268,8 +260,6 @@ html.yt-split-active ytd-watch-flexy[full-bleed-player]:not([fullscreen]) #full-
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.5s ease;
-  filter: blur(var(--split-ambient-blur)) saturate(var(--split-ambient-saturate))
-    brightness(var(--split-ambient-brightness));
 }
 
 #yt-split-ambient canvas {
