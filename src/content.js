@@ -1793,11 +1793,37 @@
     const cy = (rect.top - box.top) * AMBIENT_CANVAS_SCALE + h / 2;
     const maxScale =
       Math.max(Math.max(cx, W - cx) / (w / 2), Math.max(cy, H - cy) / (h / 2), 1) * 1.02;
+    // Each larger copy uses a smaller version of the sample (about the
+    // sample size divided by the copy's scale), made step by step from the
+    // one before, so the outer copies are soft color fields and not sharp
+    // copies of the picture. With full-detail copies, a narrow video (a
+    // Short: the outer copies are ~5x the video) showed a tunnel of
+    // picture rings (reported as a "spiral"). On the watch page the
+    // copies are at most ~2x, so it changes little there.
+    if (!a.levels) a.levels = [];
+    const sources = [a.sample];
+    for (let i = 1; i < AMBIENT_LEVELS; i++) {
+      const scale = Math.pow(maxScale, i / (AMBIENT_LEVELS - 1));
+      const sw = Math.max(2, Math.round(AMBIENT_SAMPLE_W / scale));
+      const sh = Math.max(2, Math.round(AMBIENT_SAMPLE_H / scale));
+      let level = a.levels[i];
+      if (!level) {
+        const c = document.createElement("canvas");
+        level = a.levels[i] = { canvas: c, ctx: c.getContext("2d") };
+      }
+      if (level.canvas.width !== sw || level.canvas.height !== sh) {
+        level.canvas.width = sw;
+        level.canvas.height = sh;
+      }
+      level.ctx.imageSmoothingQuality = "high";
+      level.ctx.drawImage(sources[i - 1], 0, 0, sw, sh);
+      sources.push(level.canvas);
+    }
     for (let i = AMBIENT_LEVELS - 1; i >= 0; i--) {
       const scale = Math.pow(maxScale, i / (AMBIENT_LEVELS - 1));
       const lw = w * scale;
       const lh = h * scale;
-      a.fctx.drawImage(a.sample, cx - lw / 2, cy - lh / 2, lw, lh);
+      a.fctx.drawImage(sources[i], cx - lw / 2, cy - lh / 2, lw, lh);
     }
 
     a.ctx.save();
