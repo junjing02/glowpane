@@ -1731,32 +1731,26 @@ html.yt-split-active #yt-split-keys {
 /* "My speed" button in the player's control bar (any watch page, also
    without the split) and the short note that shows when it changes. */
 #yt-split-speed-button {
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
-  width: auto !important;
-  min-width: 48px;
-  padding: 0 4px !important;
+  position: relative;
 }
 
-#yt-split-speed-button .yt-split-speed-label {
-  padding: 3px 5px;
-  border: 1.5px solid rgba(255, 255, 255, 0.75);
-  border-radius: 4px;
-  color: #fff;
-  font: 600 13px/1 "Roboto", "Arial", sans-serif;
-  opacity: 0.8;
+/* On: a red bar under the icon, like YouTube's subtitles button. */
+#yt-split-speed-button::after {
+  content: "";
+  position: absolute;
+  top: calc(50% + 14px);
+  left: 50%;
+  width: 0;
+  height: 3px;
+  border-radius: 3px;
+  background: #f00;
+  transform: translateX(-50%);
+  transition: width 0.15s ease;
+  pointer-events: none;
 }
 
-#yt-split-speed-button:hover .yt-split-speed-label {
-  opacity: 1;
-}
-
-#yt-split-speed-button.is-on .yt-split-speed-label {
-  border-color: #fff;
-  background: #fff;
-  color: #0f0f0f;
-  opacity: 1;
+#yt-split-speed-button.is-on::after {
+  width: 24px;
 }
 
 #yt-split-speed-toast {
