@@ -2058,19 +2058,9 @@
     const button = document.createElement("button");
     button.id = SPEED_BUTTON_ID;
     button.className = "ytp-button";
-    // A 24px gauge, drawn like the PiP icon so it matches YouTube's icons.
-    const svg = document.createElementNS(SVG_NS, "svg");
-    svg.setAttribute("width", "24");
-    svg.setAttribute("height", "24");
-    svg.setAttribute("viewBox", "0 0 24 24");
-    const path = document.createElementNS(SVG_NS, "path");
-    path.setAttribute("fill", "white");
-    path.setAttribute(
-      "d",
-      "M20.38 8.57l-1.23 1.85a8 8 0 0 1-.22 7.58H5.07A8 8 0 0 1 15.58 6.85l1.85-1.23A10 10 0 0 0 3.35 19a2 2 0 0 0 1.72 1h13.85a2 2 0 0 0 1.74-1 10 10 0 0 0-.27-10.44zm-9.79 6.84a2 2 0 0 0 2.83 0l5.66-8.49-8.49 5.66a2 2 0 0 0 0 2.83z"
-    );
-    svg.appendChild(path);
-    button.appendChild(svg);
+    const label = document.createElement("span");
+    label.className = "yt-split-speed-label";
+    button.appendChild(label);
     // No focus on a mouse click, so the spacebar still plays/pauses.
     button.addEventListener("mousedown", (e) => e.preventDefault());
     button.addEventListener("click", (e) => {
@@ -2097,6 +2087,7 @@
     if (button.nextElementSibling !== anchor) anchor.before(button);
     const text = speedLabel(mySpeed());
     const on = !!settings.speedOn;
+    if (button.firstChild.textContent !== text) button.firstChild.textContent = text;
     button.classList.toggle("is-on", on);
     button.setAttribute("aria-pressed", String(on));
     const tip = on ? "Back to normal speed (S)" : "Play at " + text + " (S)";

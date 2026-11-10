@@ -1730,27 +1730,34 @@ html.yt-split-active #yt-split-keys {
 
 /* "My speed" button in the player's control bar (any watch page, also
    without the split) and the short note that shows when it changes. */
+/* The pill is drawn to sit with YouTube's 24px icons: 18px tall (like the
+   subtitles icon's box), a 2px white line like the icons' strokes, and
+   full white (the .ytp-button itself handles the dim/hover state). */
 #yt-split-speed-button {
-  position: relative;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: auto !important;
+  min-width: 40px;
+  padding: 0 6px !important;
 }
 
-/* On: a red bar under the icon, like YouTube's subtitles button. */
-#yt-split-speed-button::after {
-  content: "";
-  position: absolute;
-  top: calc(50% + 14px);
-  left: 50%;
-  width: 0;
-  height: 3px;
-  border-radius: 3px;
-  background: #f00;
-  transform: translateX(-50%);
-  transition: width 0.15s ease;
-  pointer-events: none;
+#yt-split-speed-button .yt-split-speed-label {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 4px;
+  border: 2px solid #fff;
+  border-radius: 4px;
+  color: #fff;
+  font: 500 11px/1 "Roboto", "Arial", sans-serif;
+  letter-spacing: 0;
 }
 
-#yt-split-speed-button.is-on::after {
-  width: 24px;
+#yt-split-speed-button.is-on .yt-split-speed-label {
+  background: #fff;
+  color: #0f0f0f;
 }
 
 #yt-split-speed-toast {
