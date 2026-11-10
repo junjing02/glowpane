@@ -1793,6 +1793,107 @@
     const cy = (rect.top - box.top) * AMBIENT_CANVAS_SCALE + h / 2;
     const maxScale =
       Math.max(Math.max(cx, W - cx) / (w / 2), Math.max(cy, H - cy) / (h / 2), 1) * 1.02;
+    if (a.mode === "shorts") {
+      drawShortsFrame(a, W, H, cx - w / 2, cy - h / 2, w, h, light);
+    } else {
+      drawLevels(a, w, h, cx, cy, maxScale);
+    }
+
+    a.ctx.save();
+    if (a.fresh) a.ctx.clearRect(0, 0, W, H);
+    a.ctx.globalAlpha = a.fresh ? 1 : reducedMotion.matches ? AMBIENT_CALM_BLEND : AMBIENT_BLEND;
+    // Dark theme: +30% saturation (the old CSS saturate(1.3)). Light theme:
+    // tintSampleForLightTheme() already did the color work.
+    a.ctx.filter = light ? `blur(${AMBIENT_CANVAS_BLUR}px)` : `blur(${AMBIENT_CANVAS_BLUR}px) saturate(1.3)`;
+    a.ctx.drawImage(a.frame, 0, 0);
+    a.ctx.restore();
+    a.fresh = false;
+  }
+
+  // A resized copy of part of a canvas, kept in a.copies[key] between frames.
+  function scaledCopy(a, key, src, sx, sy, sw, sh, dw, dh) {
+    if (!a.copies) a.copies = {};
+    let c = a.copies[key];
+    if (!c) {
+      const el = document.createElement("canvas");
+      c = a.copies[key] = { canvas: el, ctx: el.getContext("2d") };
+    }
+    if (c.canvas.width !== dw || c.canvas.height !== dh) {
+      c.canvas.width = dw;
+      c.canvas.height = dh;
+    }
+    c.ctx.imageSmoothingQuality = "high";
+    c.ctx.drawImage(src, sx, sy, sw, sh, 0, 0, dw, dh);
+    return c.canvas;
+  }
+
+  // Shorts: a narrow video between two wide empty sides. Copies of the
+  // whole picture around it (drawLevels) showed as rings (reported twice as
+  // a "spiral"), so here the video's left and right edge colors stretch
+  // straight out to each side, as horizontal light that fades toward the
+  // window edges. Above and below get a very soft version of the whole
+  // picture. All in the opaque frame canvas (the frame blend needs it).
+  const SHORTS_EDGE_COLUMNS = 4; // of the 64 sample columns, per side
+  const SHORTS_V_LEVELS = 6;
+  const SHORTS_EDGE_FADE = 0.55; // how much the far ends fade, 0-1
+  function drawShortsFrame(a, W, H, x0, y0, w, h, light) {
+    const f = a.fctx;
+    const SW = AMBIENT_SAMPLE_W;
+    const SH = AMBIENT_SAMPLE_H;
+    // 1. Everything: the picture shrunk step by step to 4x3, stretched.
+    let tiny = a.sample;
+    let tw = SW;
+    let th = SH;
+    for (const [nw, nh] of [[32, 18], [16, 9], [8, 5], [4, 3]]) {
+      tiny = scaledCopy(a, "bg" + nw, tiny, 0, 0, tw, th, nw, nh);
+      tw = nw;
+      th = nh;
+    }
+    f.drawImage(tiny, 0, 0, W, H);
+
+    // 2. Each side: the edge columns as a 1px-wide strip, stretched across
+    // the side. Taller copies (to cover above and below) use strips with
+    // fewer rows, so they are soft, not stretched copies of the picture.
+    const cy = y0 + h / 2;
+    const maxSY = Math.max(Math.max(cy, H - cy) / (h / 2), 1) * 1.02;
+    const sides = [
+      { key: "L", sx: 0, dx: 0, dw: x0 },
+      { key: "R", sx: SW - SHORTS_EDGE_COLUMNS, dx: x0 + w, dw: W - (x0 + w) }
+    ];
+    for (const side of sides) {
+      if (side.dw <= 0) continue;
+      const strips = [scaledCopy(a, side.key + 0, a.sample, side.sx, 0, SHORTS_EDGE_COLUMNS, SH, 1, SH)];
+      let rows = SH;
+      for (let j = 1; j < SHORTS_V_LEVELS; j++) {
+        const sy = Math.pow(maxSY, j / (SHORTS_V_LEVELS - 1));
+        const nrows = Math.max(2, Math.round(SH / sy));
+        strips.push(scaledCopy(a, side.key + j, strips[j - 1], 0, 0, 1, rows, 1, nrows));
+        rows = nrows;
+      }
+      for (let j = SHORTS_V_LEVELS - 1; j >= 0; j--) {
+        const sy = Math.pow(maxSY, j / (SHORTS_V_LEVELS - 1));
+        const lh = h * sy;
+        f.drawImage(strips[j], side.dx, cy - lh / 2, side.dw, lh);
+      }
+    }
+
+    // 3. The video itself (hidden under the real video, but the blur pulls
+    // its colors into the edges).
+    f.drawImage(a.sample, x0, y0, w, h);
+
+    // 4. Fade each side toward the page color (dark: black, light: white).
+    const fade = light ? "255, 255, 255" : "0, 0, 0";
+    for (const [from, to] of [[x0, 0], [x0 + w, W]]) {
+      if (Math.abs(to - from) < 1) continue;
+      const g = f.createLinearGradient(from, 0, to, 0);
+      g.addColorStop(0, `rgba(${fade}, 0)`);
+      g.addColorStop(1, `rgba(${fade}, ${SHORTS_EDGE_FADE})`);
+      f.fillStyle = g;
+      f.fillRect(Math.min(from, to), 0, Math.abs(to - from), H);
+    }
+  }
+
+  function drawLevels(a, w, h, cx, cy, maxScale) {
     // Each larger copy uses a smaller version of the sample (about the
     // sample size divided by the copy's scale), made step by step from the
     // one before, so the outer copies are soft color fields and not sharp
@@ -1825,16 +1926,6 @@
       const lh = h * scale;
       a.fctx.drawImage(sources[i], cx - lw / 2, cy - lh / 2, lw, lh);
     }
-
-    a.ctx.save();
-    if (a.fresh) a.ctx.clearRect(0, 0, W, H);
-    a.ctx.globalAlpha = a.fresh ? 1 : reducedMotion.matches ? AMBIENT_CALM_BLEND : AMBIENT_BLEND;
-    // Dark theme: +30% saturation (the old CSS saturate(1.3)). Light theme:
-    // tintSampleForLightTheme() already did the color work.
-    a.ctx.filter = light ? `blur(${AMBIENT_CANVAS_BLUR}px)` : `blur(${AMBIENT_CANVAS_BLUR}px) saturate(1.3)`;
-    a.ctx.drawImage(a.frame, 0, 0);
-    a.ctx.restore();
-    a.fresh = false;
   }
 
   // ---- Ambient mode toggle ----
