@@ -68,7 +68,7 @@ if (videoPlay) {
     video.controls = true;
     video.autoplay = true;
     video.playsInline = true;
-    video.setAttribute("aria-label", "Glowpane: a 37-second tour");
+    video.setAttribute("aria-label", "Glowpane: a 34-second tour");
     videoPlay.replaceWith(video);
     video.play().catch(() => {});
     video.focus();
