@@ -1754,8 +1754,8 @@ html.yt-split-active #yt-split-keys {
 
 /* Shorts: the speed pill and picture-in-picture as round buttons in the
    Short's top control bar (content.js "Shorts player buttons"), 48px like
-   YouTube's own there. content.js copies the background (and blur) of
-   YouTube's full screen button into the two variables. */
+   YouTube's own there. Clear, like theirs: the bar draws one shared dark
+   background behind all of them. */
 .yt-split-shorts-btn {
   flex: none;
   display: inline-flex;
@@ -1768,16 +1768,14 @@ html.yt-split-active #yt-split-keys {
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background-color: var(--yt-split-shorts-btn-bg, rgba(0, 0, 0, 0.3));
-  -webkit-backdrop-filter: var(--yt-split-shorts-btn-blur, none);
-  backdrop-filter: var(--yt-split-shorts-btn-blur, none);
+  background: transparent;
   color: #fff;
   cursor: pointer;
   pointer-events: auto;
 }
 
 .yt-split-shorts-btn:hover {
-  background-image: linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.12));
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .yt-split-shorts-btn:focus-visible {

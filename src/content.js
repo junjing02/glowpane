@@ -2262,9 +2262,11 @@
   // ytd-shorts-player-controls > #right-controls >
   // #closed-captioning-button-container, #menu-button,
   // #fullscreen-button-shape; 48x48 round buttons, no gap; the video is in
-  // #shorts-player. The buttons copy the background of YouTube's full screen
-  // button, so they look the same. Left out when the video is too narrow for
-  // the bar to take them.
+  // #shorts-player. The bar has one shared dark background behind all its
+  // buttons, and the buttons themselves are clear, so ours are clear too
+  // (copying the full screen button's background drew a second, darker
+  // circle; reported). Left out when the video is too narrow for the bar to
+  // take them.
   const SHORTS_SPEED_ID = "yt-split-shorts-speed";
   const SHORTS_PIP_ID = "yt-split-shorts-pip";
   const SHORTS_BUTTON_CLASS = "yt-split-shorts-btn";
@@ -2320,27 +2322,10 @@
     return button;
   }
 
-  // Same background (and blur, if any) as YouTube's own buttons in this bar.
-  function matchShortsButtonLook(button, bar) {
-    const controls = bar.closest("ytd-shorts-player-controls") || bar;
-    const native = controls.querySelector(
-      "#fullscreen-button-shape button, #play-pause-button-shape button"
-    );
-    if (!native) return;
-    const style = getComputedStyle(native);
-    const bg = style.backgroundColor;
-    if (bg && bg !== "transparent" && bg !== "rgba(0, 0, 0, 0)") {
-      button.style.setProperty("--yt-split-shorts-btn-bg", bg);
-    }
-    const blur = style.backdropFilter || style.webkitBackdropFilter;
-    if (blur && blur !== "none") button.style.setProperty("--yt-split-shorts-btn-blur", blur);
-  }
-
   function placeShortsButton(button, bar, before) {
     if (button.parentNode === bar && button.nextElementSibling === before) return;
     if (before && before.parentNode === bar) before.before(button);
     else bar.prepend(button);
-    matchShortsButtonLook(button, bar);
   }
 
   // From the 500ms watchdog (through updateSpeedButton): moves the two
