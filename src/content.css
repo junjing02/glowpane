@@ -1732,7 +1732,8 @@ html.yt-split-active #yt-split-keys {
   padding: 0 6px !important;
 }
 
-#yt-split-speed-button .yt-split-speed-label {
+#yt-split-speed-button .yt-split-speed-label,
+#yt-split-shorts-speed .yt-split-speed-label {
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
@@ -1745,9 +1746,49 @@ html.yt-split-active #yt-split-keys {
   letter-spacing: 0;
 }
 
-#yt-split-speed-button.is-on .yt-split-speed-label {
+#yt-split-speed-button.is-on .yt-split-speed-label,
+#yt-split-shorts-speed.is-on .yt-split-speed-label {
   background: #fff;
   color: #0f0f0f;
+}
+
+/* Shorts: the speed pill and picture-in-picture as round buttons in the
+   Short's top control bar (content.js "Shorts player buttons"), 48px like
+   YouTube's own there. content.js copies the background (and blur) of
+   YouTube's full screen button into the two variables. */
+.yt-split-shorts-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 48px;
+  height: 48px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background-color: var(--yt-split-shorts-btn-bg, rgba(0, 0, 0, 0.3));
+  -webkit-backdrop-filter: var(--yt-split-shorts-btn-blur, none);
+  backdrop-filter: var(--yt-split-shorts-btn-blur, none);
+  color: #fff;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.yt-split-shorts-btn:hover {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.12));
+}
+
+.yt-split-shorts-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.yt-split-shorts-btn svg {
+  display: block;
+  width: 24px;
+  height: 24px;
 }
 
 #yt-split-speed-toast {

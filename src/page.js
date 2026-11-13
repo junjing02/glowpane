@@ -6,7 +6,8 @@
 // it too, rather than only changing the <video> element underneath.
 document.addEventListener("ytsplit:set-playback-rate", (e) => {
   const rate = Number(e.detail);
-  const player = document.getElementById("movie_player");
+  // Shorts have their own player element.
+  const player = document.getElementById(location.pathname.startsWith("/shorts/") ? "shorts-player" : "movie_player");
   if (!Number.isFinite(rate) || rate <= 0 || !player || typeof player.setPlaybackRate !== "function") return;
   player.setPlaybackRate(rate);
 });

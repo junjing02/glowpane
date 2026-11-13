@@ -37,7 +37,7 @@
 - **Thoughtful defaults** — live chat, light and dark themes, and the end of a video are all handled for you.
 - **Just the video** — drag the main divider to the window edge and the side pane closes; click the thin strip at that edge to bring it back.
 - **Yours to tune** — a toolbar panel to set the glow strength, hide the description, recommendations or comments, choose the side pane's width and transparency, remember your layout or put the video on the right.
-- **Your speed, every video** — pick a playback speed once, press `S`, and every new video and reload starts at it until you press `S` again.
+- **Your speed, every video** — pick a playback speed once, press `S`, and every new video, Short and reload starts at it until you press `S` again.
 - **Keyboard friendly** — shortcuts for the split and Two windows, one-key shortcuts on the video page, and dividers and pane titles you can reach with Tab.
 - **Out of the way** — theater mode and small windows get YouTube's normal layout.
 
@@ -61,8 +61,8 @@ Click the extension's toolbar icon and switch on **Two windows**. The video fill
 Click the extension's toolbar icon for the settings: the split itself, Two windows, ambient light and its strength in each theme, **Show description**, **Show recommendations**, **Show comments** (switch off all three and the video fills the window), **Open description on pause**, **Side pane width**, **Transparency**, **Remember my layout**, **Video on the right**, and **My speed**.
 
 - `Alt+Shift+S` turns the split on or off, `Alt+Shift+W` toggles Two windows, `Alt+Shift+V` hides or shows the side pane (video only), and `Alt+Shift+P` opens or closes picture-in-picture. Change them at `chrome://extensions/shortcuts`.
-- On a video page, press `E` to open or close the description, `R` for Recommended (or the live chat), and `[` or `]` to move the divider. Press `S` to switch your own playback speed on or off (pick it under **My speed** in the toolbar panel). While it is on, new videos and reloads start at that speed. Press `?` to see all of Glowpane's keys. Turn on **Open description on pause** in the toolbar panel to have it open while the video is paused and close when it plays again.
-- Picture-in-picture: click the button next to the player's settings icon (or press `Alt+Shift+P`), and the video floats in a small window on top of your other apps. It works on Shorts too, with the shortcut.
+- On a video page, press `E` to open or close the description, `R` for Recommended (or the live chat), and `[` or `]` to move the divider. Press `S` to switch your own playback speed on or off (pick it under **My speed** in the toolbar panel). While it is on, new videos, Shorts and reloads start at that speed. On Shorts, `S` works too, and the speed button sits at the top of the Short. Press `?` to see all of Glowpane's keys. Turn on **Open description on pause** in the toolbar panel to have it open while the video is paused and close when it plays again.
+- Picture-in-picture: click the button next to the player's settings icon (or press `Alt+Shift+P`), and the video floats in a small window on top of your other apps. It works on Shorts too: the button is at the top of the Short, next to the captions button.
 - Double-click a divider to reset it. While you drag, a divider snaps to its default size, so you can find it again. With a divider focused, the arrow keys move it.
 - For a quick video-only view, drag the main divider to the window edge. Past the pane's smallest size it starts to slide away, and a hint shows when to let go. Click the strip at that edge to reopen the side pane. When the video ends, the side pane opens by itself so you can pick the next one, and it closes again when the next video plays. Your Show settings stay as they are.
 - Ambient light works in light and dark themes. Its switch is in the toolbar panel, and YouTube's own Ambient mode switch turns it on and off too.
