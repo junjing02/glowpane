@@ -1753,8 +1753,11 @@ html.yt-split-active #yt-split-keys {
 }
 
 /* Thin progress line (content.js "Thin progress line"): shows only while
-   YouTube's controls are hidden during playback; fades out when they come
-   back. */
+   YouTube's controls are hidden during playback. Hidden, it sits exactly on
+   YouTube's own bar (the --yt-split-mini-* transform, measured by
+   content.js), so when the controls show, it rises from the bottom edge,
+   grows into the bar and fades into it; when they hide, it drops back down
+   to the edge. */
 #yt-split-mini-progress {
   position: absolute;
   left: 0;
@@ -1766,7 +1769,13 @@ html.yt-split-active #yt-split-keys {
   background: rgba(255, 255, 255, 0.2);
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transform-origin: 0 100%;
+  transform: translate(var(--yt-split-mini-dx, 0px), calc(-1 * var(--yt-split-mini-dy, 0px)))
+    scale(var(--yt-split-mini-sx, 1), var(--yt-split-mini-sy, 1));
+  /* To the bar: move first, then fade into it. */
+  transition:
+    transform 0.32s cubic-bezier(0.2, 0, 0, 1),
+    opacity 0.14s ease 0.2s;
 }
 
 #yt-split-mini-progress > span {
@@ -1779,11 +1788,18 @@ html.yt-split-active #yt-split-keys {
 
 #movie_player.ytp-autohide:not(.ad-showing):not(.ad-interrupting) #yt-split-mini-progress:not(.is-empty) {
   opacity: 1;
+  transform: none;
+  /* To the edge: show at once, then drop down. */
+  transition:
+    transform 0.36s cubic-bezier(0.2, 0, 0, 1),
+    opacity 0.1s ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #yt-split-mini-progress {
-    transition: none;
+  #yt-split-mini-progress,
+  #movie_player.ytp-autohide #yt-split-mini-progress {
+    transform: none !important;
+    transition: opacity 0.15s ease !important;
   }
 }
 
