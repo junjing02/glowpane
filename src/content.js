@@ -2076,6 +2076,96 @@
     if (button.nextElementSibling !== settingsButton) settingsButton.before(button);
   }
 
+  // ---- Thin progress line ----
+  // While YouTube's control bar is hidden during playback (#movie_player has
+  // `ytp-autohide`, class name from memory), a thin red line at the bottom
+  // edge of the video shows how far it has played. When the bar comes back
+  // (a mouse move, a key press, a pause), the line fades out. Not during
+  // ads or on live streams. Watch pages only (Shorts have their own line).
+  // The fill is a transform (compositor only), updated every frame while the
+  // video plays.
+  const MINI_PROGRESS_ID = "yt-split-mini-progress";
+  let miniVideo = null;
+  let miniRaf = 0;
+
+  function miniProgressWanted() {
+    return settings.splitEnabled && windowRole !== "companion" && isWatchPage();
+  }
+
+  function onMiniVideoEvent() {
+    drawMiniProgress();
+    if (!miniRaf && miniVideo && !miniVideo.paused) miniRaf = requestAnimationFrame(miniProgressLoop);
+  }
+
+  function miniProgressLoop() {
+    miniRaf = 0;
+    drawMiniProgress();
+    if (miniVideo && !miniVideo.paused && !miniVideo.ended) miniRaf = requestAnimationFrame(miniProgressLoop);
+  }
+
+  function drawMiniProgress() {
+    const el = document.getElementById(MINI_PROGRESS_ID);
+    if (!el || !miniVideo) return;
+    const duration = miniVideo.duration;
+    const live = !Number.isFinite(duration) || duration <= 0 || !!el.parentNode.querySelector(".ytp-live");
+    el.classList.toggle("is-empty", live);
+    if (live) return;
+    const part = Math.min(1, Math.max(0, miniVideo.currentTime / duration));
+    const value = "scaleX(" + part.toFixed(5) + ")";
+    if (el.firstChild.style.transform !== value) el.firstChild.style.transform = value;
+  }
+
+  // Same color as YouTube's own played part (a gradient in newer players).
+  function matchMiniProgressColor(el, player) {
+    const played = player.querySelector(".ytp-play-progress");
+    if (!played) return;
+    const style = getComputedStyle(played);
+    const image = style.backgroundImage;
+    const color = style.backgroundColor;
+    if (image && image !== "none") el.firstChild.style.background = image;
+    else if (color && color !== "rgba(0, 0, 0, 0)") el.firstChild.style.background = color;
+    else return;
+    el.dataset.ytSplitColored = "1";
+  }
+
+  function setMiniVideo(video) {
+    if (miniVideo === video) return;
+    const events = ["play", "playing", "seeked", "timeupdate", "durationchange", "loadedmetadata"];
+    if (miniVideo) for (const type of events) miniVideo.removeEventListener(type, onMiniVideoEvent);
+    if (miniRaf) cancelAnimationFrame(miniRaf);
+    miniRaf = 0;
+    miniVideo = video;
+    if (video) {
+      for (const type of events) video.addEventListener(type, onMiniVideoEvent);
+      onMiniVideoEvent();
+    }
+  }
+
+  // From the 500ms watchdog.
+  function updateMiniProgress() {
+    const player = miniProgressWanted() ? watchRoot().querySelector("#movie_player") : null;
+    const video = player && player.querySelector("video");
+    let el = document.getElementById(MINI_PROGRESS_ID);
+    if (!video) {
+      if (el) el.remove();
+      setMiniVideo(null);
+      return;
+    }
+    if (!el) {
+      el = document.createElement("div");
+      el.id = MINI_PROGRESS_ID;
+      el.setAttribute("aria-hidden", "true");
+      el.appendChild(document.createElement("span"));
+    }
+    if (el.parentNode !== player) {
+      player.appendChild(el);
+      delete el.dataset.ytSplitColored;
+    }
+    if (!el.dataset.ytSplitColored) matchMiniProgressColor(el, player);
+    setMiniVideo(video);
+    drawMiniProgress();
+  }
+
   // ---- My speed ----
   // "My speed" in the panel (speedRate) and an on/off state (speedOn) that
   // the S key and the speed button in the player switch. While on, each new
@@ -2466,6 +2556,7 @@
   const WHATS_NEW = {
     version: "1.15.0",
     tips: [
+      "While the video plays and the controls are hidden, a thin red line at its bottom edge shows how far it has played.",
       "Shorts now get your speed too: press S, or click the speed button at the top of a Short. The picture-in-picture button is there as well.",
       "The description key is now E (D clashed with keyboard extensions like Vimium). R opens Recommended, [ and ] move the divider, ? shows every key.",
       "Want to read while you pause? Turn on \"Open description on pause\" behind the toolbar icon.",
@@ -4381,6 +4472,7 @@
     watchdogWasWatching = watching;
     updateShortsGlow();
     updatePipButton();
+    updateMiniProgress();
     updateSpeedButton();
     maybeApplyMySpeed();
   }, 500);

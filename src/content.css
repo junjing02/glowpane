@@ -1752,6 +1752,41 @@ html.yt-split-active #yt-split-keys {
   color: #0f0f0f;
 }
 
+/* Thin progress line (content.js "Thin progress line"): shows only while
+   YouTube's controls are hidden during playback; fades out when they come
+   back. */
+#yt-split-mini-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 39;
+  height: 2px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+#yt-split-mini-progress > span {
+  position: absolute;
+  inset: 0;
+  background: #f00;
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+#movie_player.ytp-autohide:not(.ad-showing):not(.ad-interrupting) #yt-split-mini-progress:not(.is-empty) {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #yt-split-mini-progress {
+    transition: none;
+  }
+}
+
 /* Shorts: the speed pill and picture-in-picture as round buttons in the
    Short's top control bar (content.js "Shorts player buttons"), 48px like
    YouTube's own there. Clear, like theirs: the bar draws one shared dark
