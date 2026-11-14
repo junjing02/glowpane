@@ -2174,12 +2174,15 @@
   // video (and a refresh) starts at that speed, because YouTube goes back to
   // 1x after a reload. Off sets normal speed. Applied once per video, so a
   // speed picked in YouTube's own menu stays for the rest of that video. Not
-  // during an ad, and not on live streams (`.ytp-live`, from memory).
+  // during an ad. Live streams always play at normal speed: while on, My
+  // speed sets 1x there, and the buttons and the S key are switched off
+  // (`.ytp-live`, from memory).
   // Works on any watch page, also in theater mode and small windows, and on
   // Shorts (each Short is a new video; buttons in "Shorts player buttons").
   const SPEED_BUTTON_ID = "yt-split-speed-button";
   const SPEED_TOAST_ID = "yt-split-speed-toast";
   let speedAppliedFor = null;
+  let liveResetFor = null;
   let speedToastTimer = null;
 
   function mySpeed() {
@@ -2222,6 +2225,11 @@
     return watchRoot().querySelector("#movie_player");
   }
 
+  // Watch page only; Shorts are not live.
+  function isLiveVideo() {
+    return isWatchPage() && !!watchRoot().querySelector("#movie_player .ytp-live");
+  }
+
   function isAdPlaying() {
     const player = speedPlayer();
     return !!player && (player.classList.contains("ad-showing") || player.classList.contains("ad-interrupting"));
@@ -2238,15 +2246,25 @@
   function maybeApplyMySpeed() {
     if (!settings.speedOn || !speedAllowed()) return;
     const id = currentWatchId();
-    if (!id || id === speedAppliedFor) return;
+    if (!id) return;
     const video = speedVideo();
     if (!video || video.paused || isAdPlaying()) return;
+    if (isLiveVideo()) {
+      // Normal speed, once per live stream: also when My speed was already
+      // set before the player showed that it is live.
+      if (liveResetFor !== id) {
+        liveResetFor = id;
+        speedAppliedFor = id;
+        if (video.playbackRate !== 1) setVideoSpeed(video, 1);
+      }
+      return;
+    }
+    if (id === speedAppliedFor) return;
     speedAppliedFor = id;
-    if (isWatchPage() && watchRoot().querySelector("#movie_player .ytp-live")) return;
     setVideoSpeed(video, mySpeed());
     // YouTube's own player setup can reset the speed just after the start.
     setTimeout(() => {
-      if (settings.speedOn && speedAppliedFor === id && currentWatchId() === id && !isAdPlaying()) {
+      if (settings.speedOn && speedAppliedFor === id && currentWatchId() === id && !isAdPlaying() && !isLiveVideo()) {
         setVideoSpeed(video, mySpeed());
       }
     }, 800);
@@ -2254,6 +2272,10 @@
 
   function toggleMySpeed() {
     if (!speedAllowed()) return;
+    if (isLiveVideo()) {
+      showSpeedToast("Live: normal speed");
+      return;
+    }
     const on = !settings.speedOn;
     settings.speedOn = on;
     try {
@@ -2336,11 +2358,16 @@
   // Label, on state and tooltip, for both speed buttons.
   function refreshSpeedButton(button) {
     const text = speedLabel(mySpeed());
-    const on = !!settings.speedOn;
+    const live = isLiveVideo();
+    const on = !!settings.speedOn && !live;
     if (button.firstChild.textContent !== text) button.firstChild.textContent = text;
     button.classList.toggle("is-on", on);
+    button.classList.toggle("is-disabled", live);
     button.setAttribute("aria-pressed", String(on));
-    const tip = on ? "Back to normal speed (S)" : "Play at " + text + " (S)";
+    if (live) button.setAttribute("aria-disabled", "true");
+    else button.removeAttribute("aria-disabled");
+    const tip = live ? "Live streams play at normal speed"
+      : on ? "Back to normal speed (S)" : "Play at " + text + " (S)";
     if (button.title !== tip) {
       button.title = tip;
       button.setAttribute("aria-label", tip);
@@ -4028,6 +4055,7 @@
     // This speed came from the other window: "My speed" leaves it alone.
     speedAppliedFor = currentWatchId();
     const apply = () => {
+      if (isLiveVideo()) return;
       document.dispatchEvent(new CustomEvent("ytsplit:set-playback-rate", { detail: String(rate) }));
       // Fallback if the page-world helper isn't there: set the element.
       if (video.playbackRate !== rate) video.playbackRate = rate;

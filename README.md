@@ -37,7 +37,7 @@
 - **Thoughtful defaults** — live chat, light and dark themes, and the end of a video are all handled for you.
 - **Just the video** — drag the main divider to the window edge and the side pane closes; click the thin strip at that edge to bring it back.
 - **Yours to tune** — a toolbar panel to set the glow strength, hide the description, recommendations or comments, choose the side pane's width and transparency, remember your layout or put the video on the right.
-- **Your speed, every video** — pick a playback speed once, press `S`, and every new video, Short and reload starts at it until you press `S` again.
+- **Your speed, every video** — pick a playback speed once, press `S`, and every new video, Short and reload starts at it until you press `S` again. Live streams always play at normal speed.
 - **Keyboard friendly** — shortcuts for the split and Two windows, one-key shortcuts on the video page, and dividers and pane titles you can reach with Tab.
 - **Out of the way** — theater mode and small windows get YouTube's normal layout.
 

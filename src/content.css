@@ -1752,6 +1752,15 @@ html.yt-split-active #yt-split-keys {
   color: #0f0f0f;
 }
 
+/* Live streams always play at normal speed: the pill is dimmed there. */
+#yt-split-speed-button.is-disabled {
+  cursor: default;
+}
+
+#yt-split-speed-button.is-disabled .yt-split-speed-label {
+  opacity: 0.4;
+}
+
 /* Thin progress line (content.js "Thin progress line"): shows only while
    YouTube's controls are hidden during playback. It always stays at the
    bottom edge. The two are never on screen together: when the controls
