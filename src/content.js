@@ -2087,6 +2087,7 @@
   const MINI_PROGRESS_ID = "yt-split-mini-progress";
   let miniVideo = null;
   let miniRaf = 0;
+  let miniLive = false; // checked by the watchdog, not every frame
 
   function miniProgressWanted() {
     return settings.splitEnabled && windowRole !== "companion" && isWatchPage();
@@ -2107,7 +2108,7 @@
     const el = document.getElementById(MINI_PROGRESS_ID);
     if (!el || !miniVideo) return;
     const duration = miniVideo.duration;
-    const live = !Number.isFinite(duration) || duration <= 0 || !!el.parentNode.querySelector(".ytp-live");
+    const live = miniLive || !Number.isFinite(duration) || duration <= 0;
     el.classList.toggle("is-empty", live);
     if (live) return;
     const part = Math.min(1, Math.max(0, miniVideo.currentTime / duration));
@@ -2162,6 +2163,7 @@
       delete el.dataset.ytSplitColored;
     }
     if (!el.dataset.ytSplitColored) matchMiniProgressColor(el, player);
+    miniLive = !!player.querySelector(".ytp-live");
     setMiniVideo(video);
     drawMiniProgress();
   }
