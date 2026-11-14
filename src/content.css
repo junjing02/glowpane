@@ -43,14 +43,11 @@ html.yt-split-active {
   /* Ambient light (our own renderer: content.js "Ambient light" section,
      styled by #yt-split-ambient below). */
   --split-ambient-opacity: 0.7; /* overall strength, 0-1 */
-  --split-ambient-brightness: 1;
-  --split-ambient-saturate: 1.3;
-  --split-ambient-blur: 40px; /* extra softening on top of the canvas blur */
   --split-ambient-grain: 0.35; /* anti-banding grain, 0 = off */
   /* How far the glow extends past the window on each side, so the blurred
-     canvas edges fade out off-screen. Keep it above ~3x the combined blur
-     (sqrt(canvas blur^2 + --split-ambient-blur^2); the canvas blur is
-     AMBIENT_CANVAS_BLUR in content.js, ~56px): ~210px at the defaults. */
+     canvas edges fade out off-screen. Keep it above ~3x the blur
+     (AMBIENT_CANVAS_BLUR in content.js, ~72 CSS px): ~216px. The blur and
+     saturation are done in the canvas, not with a CSS filter (GPU cost). */
   --split-ambient-overscan: 260px;
 }
 
@@ -65,9 +62,8 @@ html.yt-split-active:not([dark]) {
   /* Ambient light in light theme (an addition over YouTube, which has no
      Ambient mode here): content.js turns the sampled colors into tints
      over white (tintSampleForLightTheme), which does the color work
-     itself, so no extra saturation here. Much less grain (it reads as
-     dirt on white). */
-  --split-ambient-saturate: 1;
+     itself (no extra saturation in the canvas filter either). Much less
+     grain (it reads as dirt on white). */
   --split-ambient-grain: 0.1;
 }
 
@@ -76,16 +72,12 @@ html.yt-split-active:not([dark]) {
    these in step with the two blocks above. */
 html.yt-shorts-glow {
   --split-ambient-opacity: 0.7;
-  --split-ambient-brightness: 1;
-  --split-ambient-saturate: 1.3;
-  --split-ambient-blur: 40px;
   --split-ambient-grain: 0.35;
   --split-ambient-overscan: 260px;
   --split-pane-bg: rgba(33, 33, 33, var(--split-pane-alpha, 0.6));
 }
 
 html.yt-shorts-glow:not([dark]) {
-  --split-ambient-saturate: 1;
   --split-ambient-grain: 0.1;
   --split-pane-bg: rgba(242, 242, 242, var(--split-pane-alpha, 0.6));
 }
@@ -268,8 +260,6 @@ html.yt-split-active ytd-watch-flexy[full-bleed-player]:not([fullscreen]) #full-
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.5s ease;
-  filter: blur(var(--split-ambient-blur)) saturate(var(--split-ambient-saturate))
-    brightness(var(--split-ambient-brightness));
 }
 
 #yt-split-ambient canvas {
@@ -1730,33 +1720,122 @@ html.yt-split-active #yt-split-keys {
 
 /* "My speed" button in the player's control bar (any watch page, also
    without the split) and the short note that shows when it changes. */
+/* The pill is drawn to sit with YouTube's 24px icons: 18px tall (like the
+   subtitles icon's box), a 2px white line like the icons' strokes, and
+   full white (the .ytp-button itself handles the dim/hover state). */
 #yt-split-speed-button {
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
   width: auto !important;
-  min-width: 48px;
-  padding: 0 4px !important;
+  min-width: 40px;
+  padding: 0 6px !important;
 }
 
-#yt-split-speed-button .yt-split-speed-label {
-  padding: 3px 5px;
-  border: 1.5px solid rgba(255, 255, 255, 0.75);
+#yt-split-speed-button .yt-split-speed-label,
+#yt-split-shorts-speed .yt-split-speed-label {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 4px;
+  border: 2px solid #fff;
   border-radius: 4px;
   color: #fff;
-  font: 600 13px/1 "Roboto", "Arial", sans-serif;
-  opacity: 0.8;
+  font: 500 11px/1 "Roboto", "Arial", sans-serif;
+  letter-spacing: 0;
 }
 
-#yt-split-speed-button:hover .yt-split-speed-label {
-  opacity: 1;
-}
-
-#yt-split-speed-button.is-on .yt-split-speed-label {
-  border-color: #fff;
+#yt-split-speed-button.is-on .yt-split-speed-label,
+#yt-split-shorts-speed.is-on .yt-split-speed-label {
   background: #fff;
   color: #0f0f0f;
+}
+
+/* Thin progress line (content.js "Thin progress line"): shows only while
+   YouTube's controls are hidden during playback. It always stays at the
+   bottom edge. The two are never on screen together: when the controls
+   show, the line sinks into the edge and fades at once (before YouTube's bar
+   has faded in); when they hide, it waits until YouTube's bar has faded out,
+   then rises out of the edge. (A version that moved the line up into
+   YouTube's bar showed two lines during the change: reported.) */
+#yt-split-mini-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 39;
+  height: 2px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+  opacity: 0;
+  transform: scaleY(0);
+  transform-origin: 50% 100%;
+  transition:
+    transform 0.12s cubic-bezier(0.4, 0, 1, 1),
+    opacity 0.1s linear;
+}
+
+#yt-split-mini-progress > span {
+  position: absolute;
+  inset: 0;
+  background: #f00;
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+#movie_player.ytp-autohide:not(.ad-showing):not(.ad-interrupting) #yt-split-mini-progress:not(.is-empty) {
   opacity: 1;
+  transform: none;
+  transition:
+    transform 0.3s cubic-bezier(0.2, 0, 0, 1) 0.2s,
+    opacity 0.2s ease 0.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #yt-split-mini-progress,
+  #movie_player.ytp-autohide #yt-split-mini-progress {
+    transform: none !important;
+    transition: opacity 0.1s linear !important;
+  }
+}
+
+/* Shorts: the speed pill and picture-in-picture as round buttons in the
+   Short's top control bar (content.js "Shorts player buttons"), 48px like
+   YouTube's own there. Clear, like theirs: the bar draws one shared dark
+   background behind all of them. */
+.yt-split-shorts-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 48px;
+  height: 48px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.yt-split-shorts-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.yt-split-shorts-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.yt-split-shorts-btn svg {
+  display: block;
+  width: 24px;
+  height: 24px;
 }
 
 #yt-split-speed-toast {

@@ -1519,9 +1519,13 @@
   //      edges.
   //   3. The frame is blurred into the visible canvas (cheap at this size)
   //      and blended over the previous one (AMBIENT_BLEND) to smooth
-  //      flicker without noticeable lag. CSS adds a little more blur plus
-  //      brightness/saturation (--split-ambient-* tokens in content.css),
-  //      and a separate grain layer hides color banding.
+  //      flicker without noticeable lag. The same canvas filter adds the
+  //      saturation; a separate grain layer hides color banding.
+  //   Performance: all blur and color work happens in that small canvas.
+  //   A CSS filter on the full-window layer (the old version: 40px blur,
+  //   on 4K at 2x about 30 million pixels per frame) made the GPU redo it on
+  //   every frame, competing with the video itself (reported: video lag).
+  //   Don't put a CSS filter back on #yt-split-ambient.
   // The extension's "Ambient light" switch turns it on and off; YouTube's
   // own "Ambient mode" toggle sets that switch too (see "Ambient mode
   // toggle" below). YouTube's native glow is hidden (content.css). Replaces an earlier
@@ -1534,15 +1538,15 @@
   const AMBIENT_SAMPLE_W = 64;
   const AMBIENT_SAMPLE_H = 36;
   const AMBIENT_CANVAS_SCALE = 1 / 8; // canvas px per CSS px
-  const AMBIENT_CANVAS_BLUR = 7; // in canvas px (~56 CSS px)
+  const AMBIENT_CANVAS_BLUR = 9; // in canvas px (~72 CSS px; was 7 + a 40px CSS blur)
   // Light theme (see tintSampleForLightTheme): overall tint strength, and
   // how much the video's colors are saturated before tinting.
   const AMBIENT_LIGHT_AMOUNT = 0.95;
   const AMBIENT_LIGHT_SATURATION = 1.7;
   const AMBIENT_LIGHT_LIFT = "rgb(120, 120, 120)"; // fallback only: screen-blend lift toward white
   const AMBIENT_LEVELS = 12;
-  const AMBIENT_BLEND = 0.5; // weight of each new frame over the previous
-  const AMBIENT_FRAME_MS = 1000 / 30;
+  const AMBIENT_BLEND = 0.6; // weight of each new frame over the previous
+  const AMBIENT_FRAME_MS = 1000 / 20; // a blurred glow looks the same at 20fps
   // With the system's "reduce motion" setting on, the glow updates a few
   // times a second and eases in slowly, so it drifts instead of flickering
   // along with every cut.
@@ -1789,20 +1793,139 @@
     const cy = (rect.top - box.top) * AMBIENT_CANVAS_SCALE + h / 2;
     const maxScale =
       Math.max(Math.max(cx, W - cx) / (w / 2), Math.max(cy, H - cy) / (h / 2), 1) * 1.02;
-    for (let i = AMBIENT_LEVELS - 1; i >= 0; i--) {
-      const scale = Math.pow(maxScale, i / (AMBIENT_LEVELS - 1));
-      const lw = w * scale;
-      const lh = h * scale;
-      a.fctx.drawImage(a.sample, cx - lw / 2, cy - lh / 2, lw, lh);
+    if (a.mode === "shorts") {
+      drawShortsFrame(a, W, H, cx - w / 2, cy - h / 2, w, h, light);
+    } else {
+      drawLevels(a, w, h, cx, cy, maxScale);
     }
 
     a.ctx.save();
     if (a.fresh) a.ctx.clearRect(0, 0, W, H);
     a.ctx.globalAlpha = a.fresh ? 1 : reducedMotion.matches ? AMBIENT_CALM_BLEND : AMBIENT_BLEND;
-    a.ctx.filter = `blur(${AMBIENT_CANVAS_BLUR}px)`;
+    // Dark theme: +30% saturation (the old CSS saturate(1.3)). Light theme:
+    // tintSampleForLightTheme() already did the color work.
+    a.ctx.filter = light ? `blur(${AMBIENT_CANVAS_BLUR}px)` : `blur(${AMBIENT_CANVAS_BLUR}px) saturate(1.3)`;
     a.ctx.drawImage(a.frame, 0, 0);
     a.ctx.restore();
     a.fresh = false;
+  }
+
+  // A resized copy of part of a canvas, kept in a.copies[key] between frames.
+  function scaledCopy(a, key, src, sx, sy, sw, sh, dw, dh) {
+    if (!a.copies) a.copies = {};
+    let c = a.copies[key];
+    if (!c) {
+      const el = document.createElement("canvas");
+      c = a.copies[key] = { canvas: el, ctx: el.getContext("2d") };
+    }
+    if (c.canvas.width !== dw || c.canvas.height !== dh) {
+      c.canvas.width = dw;
+      c.canvas.height = dh;
+    }
+    c.ctx.imageSmoothingQuality = "high";
+    c.ctx.drawImage(src, sx, sy, sw, sh, 0, 0, dw, dh);
+    return c.canvas;
+  }
+
+  // Shorts: a narrow video between two wide empty sides. Copies of the
+  // whole picture around it (drawLevels) showed as rings (reported twice as
+  // a "spiral"), so here the video's left and right edge colors stretch
+  // straight out to each side, as horizontal light that fades toward the
+  // window edges. Above and below get a very soft version of the whole
+  // picture. All in the opaque frame canvas (the frame blend needs it).
+  const SHORTS_EDGE_COLUMNS = 4; // of the 64 sample columns, per side
+  const SHORTS_V_LEVELS = 6;
+  const SHORTS_EDGE_FADE = 0.55; // how much the far ends fade, 0-1
+  function drawShortsFrame(a, W, H, x0, y0, w, h, light) {
+    const f = a.fctx;
+    const SW = AMBIENT_SAMPLE_W;
+    const SH = AMBIENT_SAMPLE_H;
+    // 1. Everything: the picture shrunk step by step to 4x3, stretched.
+    let tiny = a.sample;
+    let tw = SW;
+    let th = SH;
+    for (const [nw, nh] of [[32, 18], [16, 9], [8, 5], [4, 3]]) {
+      tiny = scaledCopy(a, "bg" + nw, tiny, 0, 0, tw, th, nw, nh);
+      tw = nw;
+      th = nh;
+    }
+    f.drawImage(tiny, 0, 0, W, H);
+
+    // 2. Each side: the edge columns as a 1px-wide strip, stretched across
+    // the side. Taller copies (to cover above and below) use strips with
+    // fewer rows, so they are soft, not stretched copies of the picture.
+    const cy = y0 + h / 2;
+    const maxSY = Math.max(Math.max(cy, H - cy) / (h / 2), 1) * 1.02;
+    const sides = [
+      { key: "L", sx: 0, dx: 0, dw: x0 },
+      { key: "R", sx: SW - SHORTS_EDGE_COLUMNS, dx: x0 + w, dw: W - (x0 + w) }
+    ];
+    for (const side of sides) {
+      if (side.dw <= 0) continue;
+      const strips = [scaledCopy(a, side.key + 0, a.sample, side.sx, 0, SHORTS_EDGE_COLUMNS, SH, 1, SH)];
+      let rows = SH;
+      for (let j = 1; j < SHORTS_V_LEVELS; j++) {
+        const sy = Math.pow(maxSY, j / (SHORTS_V_LEVELS - 1));
+        const nrows = Math.max(2, Math.round(SH / sy));
+        strips.push(scaledCopy(a, side.key + j, strips[j - 1], 0, 0, 1, rows, 1, nrows));
+        rows = nrows;
+      }
+      for (let j = SHORTS_V_LEVELS - 1; j >= 0; j--) {
+        const sy = Math.pow(maxSY, j / (SHORTS_V_LEVELS - 1));
+        const lh = h * sy;
+        f.drawImage(strips[j], side.dx, cy - lh / 2, side.dw, lh);
+      }
+    }
+
+    // 3. The video itself (hidden under the real video, but the blur pulls
+    // its colors into the edges).
+    f.drawImage(a.sample, x0, y0, w, h);
+
+    // 4. Fade each side toward the page color (dark: black, light: white).
+    const fade = light ? "255, 255, 255" : "0, 0, 0";
+    for (const [from, to] of [[x0, 0], [x0 + w, W]]) {
+      if (Math.abs(to - from) < 1) continue;
+      const g = f.createLinearGradient(from, 0, to, 0);
+      g.addColorStop(0, `rgba(${fade}, 0)`);
+      g.addColorStop(1, `rgba(${fade}, ${SHORTS_EDGE_FADE})`);
+      f.fillStyle = g;
+      f.fillRect(Math.min(from, to), 0, Math.abs(to - from), H);
+    }
+  }
+
+  function drawLevels(a, w, h, cx, cy, maxScale) {
+    // Each larger copy uses a smaller version of the sample (about the
+    // sample size divided by the copy's scale), made step by step from the
+    // one before, so the outer copies are soft color fields and not sharp
+    // copies of the picture. With full-detail copies, a narrow video (a
+    // Short: the outer copies are ~5x the video) showed a tunnel of
+    // picture rings (reported as a "spiral"). On the watch page the
+    // copies are at most ~2x, so it changes little there.
+    if (!a.levels) a.levels = [];
+    const sources = [a.sample];
+    for (let i = 1; i < AMBIENT_LEVELS; i++) {
+      const scale = Math.pow(maxScale, i / (AMBIENT_LEVELS - 1));
+      const sw = Math.max(2, Math.round(AMBIENT_SAMPLE_W / scale));
+      const sh = Math.max(2, Math.round(AMBIENT_SAMPLE_H / scale));
+      let level = a.levels[i];
+      if (!level) {
+        const c = document.createElement("canvas");
+        level = a.levels[i] = { canvas: c, ctx: c.getContext("2d") };
+      }
+      if (level.canvas.width !== sw || level.canvas.height !== sh) {
+        level.canvas.width = sw;
+        level.canvas.height = sh;
+      }
+      level.ctx.imageSmoothingQuality = "high";
+      level.ctx.drawImage(sources[i - 1], 0, 0, sw, sh);
+      sources.push(level.canvas);
+    }
+    for (let i = AMBIENT_LEVELS - 1; i >= 0; i--) {
+      const scale = Math.pow(maxScale, i / (AMBIENT_LEVELS - 1));
+      const lw = w * scale;
+      const lh = h * scale;
+      a.fctx.drawImage(sources[i], cx - lw / 2, cy - lh / 2, lw, lh);
+    }
   }
 
   // ---- Ambient mode toggle ----
@@ -1907,12 +2030,7 @@
   globalThis.glowpaneTogglePip = togglePictureInPicture;
 
   // Built with createElementNS: YouTube enforces Trusted Types (no innerHTML).
-  function buildPipButton() {
-    const button = document.createElement("button");
-    button.id = PIP_BUTTON_ID;
-    button.className = "ytp-button";
-    button.setAttribute("aria-label", "Picture-in-picture (Alt+Shift+P)");
-    button.title = "Picture-in-picture (Alt+Shift+P)";
+  function buildPipIcon() {
     const svg = document.createElementNS(SVG_NS, "svg");
     svg.setAttribute("width", "24");
     svg.setAttribute("height", "24");
@@ -1924,7 +2042,16 @@
       "M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z"
     );
     svg.appendChild(path);
-    button.appendChild(svg);
+    return svg;
+  }
+
+  function buildPipButton() {
+    const button = document.createElement("button");
+    button.id = PIP_BUTTON_ID;
+    button.className = "ytp-button";
+    button.setAttribute("aria-label", "Picture-in-picture (Alt+Shift+P)");
+    button.title = "Picture-in-picture (Alt+Shift+P)";
+    button.appendChild(buildPipIcon());
     // No focus on a mouse click, so the spacebar still plays/pauses.
     button.addEventListener("mousedown", (e) => e.preventDefault());
     button.addEventListener("click", (e) => {
@@ -1949,6 +2076,98 @@
     if (button.nextElementSibling !== settingsButton) settingsButton.before(button);
   }
 
+  // ---- Thin progress line ----
+  // While YouTube's control bar is hidden during playback (#movie_player has
+  // `ytp-autohide`, class name from memory), a thin red line at the bottom
+  // edge of the video shows how far it has played. When the bar comes back
+  // (a mouse move, a key press, a pause), the line fades out. Not during
+  // ads or on live streams. Watch pages only (Shorts have their own line).
+  // The fill is a transform (compositor only), updated every frame while the
+  // video plays.
+  const MINI_PROGRESS_ID = "yt-split-mini-progress";
+  let miniVideo = null;
+  let miniRaf = 0;
+  let miniLive = false; // checked by the watchdog, not every frame
+
+  function miniProgressWanted() {
+    return settings.splitEnabled && windowRole !== "companion" && isWatchPage();
+  }
+
+  function onMiniVideoEvent() {
+    drawMiniProgress();
+    if (!miniRaf && miniVideo && !miniVideo.paused) miniRaf = requestAnimationFrame(miniProgressLoop);
+  }
+
+  function miniProgressLoop() {
+    miniRaf = 0;
+    drawMiniProgress();
+    if (miniVideo && !miniVideo.paused && !miniVideo.ended) miniRaf = requestAnimationFrame(miniProgressLoop);
+  }
+
+  function drawMiniProgress() {
+    const el = document.getElementById(MINI_PROGRESS_ID);
+    if (!el || !miniVideo) return;
+    const duration = miniVideo.duration;
+    const live = miniLive || !Number.isFinite(duration) || duration <= 0;
+    el.classList.toggle("is-empty", live);
+    if (live) return;
+    const part = Math.min(1, Math.max(0, miniVideo.currentTime / duration));
+    const value = "scaleX(" + part.toFixed(5) + ")";
+    if (el.firstChild.style.transform !== value) el.firstChild.style.transform = value;
+  }
+
+  // Same color as YouTube's own played part (a gradient in newer players).
+  function matchMiniProgressColor(el, player) {
+    const played = player.querySelector(".ytp-play-progress");
+    if (!played) return;
+    const style = getComputedStyle(played);
+    const image = style.backgroundImage;
+    const color = style.backgroundColor;
+    if (image && image !== "none") el.firstChild.style.background = image;
+    else if (color && color !== "rgba(0, 0, 0, 0)") el.firstChild.style.background = color;
+    else return;
+    el.dataset.ytSplitColored = "1";
+  }
+
+  function setMiniVideo(video) {
+    if (miniVideo === video) return;
+    const events = ["play", "playing", "seeked", "timeupdate", "durationchange", "loadedmetadata"];
+    if (miniVideo) for (const type of events) miniVideo.removeEventListener(type, onMiniVideoEvent);
+    if (miniRaf) cancelAnimationFrame(miniRaf);
+    miniRaf = 0;
+    miniVideo = video;
+    if (video) {
+      for (const type of events) video.addEventListener(type, onMiniVideoEvent);
+      onMiniVideoEvent();
+    }
+  }
+
+  // From the 500ms watchdog.
+  function updateMiniProgress() {
+    const player = miniProgressWanted() ? watchRoot().querySelector("#movie_player") : null;
+    const video = player && player.querySelector("video");
+    let el = document.getElementById(MINI_PROGRESS_ID);
+    if (!video) {
+      if (el) el.remove();
+      setMiniVideo(null);
+      return;
+    }
+    if (!el) {
+      el = document.createElement("div");
+      el.id = MINI_PROGRESS_ID;
+      el.setAttribute("aria-hidden", "true");
+      el.appendChild(document.createElement("span"));
+    }
+    if (el.parentNode !== player) {
+      player.appendChild(el);
+      delete el.dataset.ytSplitColored;
+    }
+    if (!el.dataset.ytSplitColored) matchMiniProgressColor(el, player);
+    miniLive = !!player.querySelector(".ytp-live");
+    setMiniVideo(video);
+    drawMiniProgress();
+  }
+
   // ---- My speed ----
   // "My speed" in the panel (speedRate) and an on/off state (speedOn) that
   // the S key and the speed button in the player switch. While on, each new
@@ -1956,7 +2175,8 @@
   // 1x after a reload. Off sets normal speed. Applied once per video, so a
   // speed picked in YouTube's own menu stays for the rest of that video. Not
   // during an ad, and not on live streams (`.ytp-live`, from memory).
-  // Works on any watch page, also in theater mode and small windows.
+  // Works on any watch page, also in theater mode and small windows, and on
+  // Shorts (each Short is a new video; buttons in "Shorts player buttons").
   const SPEED_BUTTON_ID = "yt-split-speed-button";
   const SPEED_TOAST_ID = "yt-split-speed-toast";
   let speedAppliedFor = null;
@@ -1972,20 +2192,38 @@
   }
 
   function speedAllowed() {
-    return settings.splitEnabled && windowRole !== "companion" && isWatchPage();
+    return settings.splitEnabled && windowRole !== "companion" && (isWatchPage() || isShortsPage());
   }
 
+  // The video id (Shorts: "shorts:" + the id in the path).
   function currentWatchId() {
+    if (isShortsPage()) {
+      const match = location.pathname.match(/^\/shorts\/([^/?#]+)/);
+      return match ? "shorts:" + match[1] : null;
+    }
     return new URLSearchParams(location.search).get("v");
   }
 
   function speedVideo() {
+    if (isShortsPage()) {
+      const found = findShortsVideo();
+      return found ? found.video : null;
+    }
     const video = watchRoot().querySelector("#movie_player video");
     return video && video.readyState >= 1 ? video : null;
   }
 
+  // The player box around the video (#movie_player, or #shorts-player).
+  function speedPlayer() {
+    if (isShortsPage()) {
+      const video = speedVideo();
+      return video ? video.closest(".html5-video-player") : null;
+    }
+    return watchRoot().querySelector("#movie_player");
+  }
+
   function isAdPlaying() {
-    const player = watchRoot().querySelector("#movie_player");
+    const player = speedPlayer();
     return !!player && (player.classList.contains("ad-showing") || player.classList.contains("ad-interrupting"));
   }
 
@@ -2004,7 +2242,7 @@
     const video = speedVideo();
     if (!video || video.paused || isAdPlaying()) return;
     speedAppliedFor = id;
-    if (watchRoot().querySelector("#movie_player .ytp-live")) return;
+    if (isWatchPage() && watchRoot().querySelector("#movie_player .ytp-live")) return;
     setVideoSpeed(video, mySpeed());
     // YouTube's own player setup can reset the speed just after the start.
     setTimeout(() => {
@@ -2036,7 +2274,7 @@
   }
 
   function showSpeedToast(text) {
-    const player = watchRoot().querySelector("#movie_player");
+    const player = speedPlayer();
     if (!player) return;
     let toast = document.getElementById(SPEED_TOAST_ID);
     if (!toast) {
@@ -2070,10 +2308,17 @@
     return button;
   }
 
-  // Called by the 500ms watchdog (after updatePipButton): keeps the button
-  // just before the picture-in-picture button, or before the settings button.
+  // Called by the 500ms watchdog (after updatePipButton) and on a setting
+  // change: the watch page button, then the Shorts buttons.
   function updateSpeedButton() {
-    const settingsButton = speedAllowed()
+    updateWatchSpeedButton();
+    updateShortsButtons();
+  }
+
+  // Keeps the button just before the picture-in-picture button, or before
+  // the settings button.
+  function updateWatchSpeedButton() {
+    const settingsButton = speedAllowed() && isWatchPage()
       ? watchRoot().querySelector("#movie_player .ytp-right-controls .ytp-settings-button")
       : null;
     let button = document.getElementById(SPEED_BUTTON_ID);
@@ -2085,6 +2330,11 @@
     const pip = document.getElementById(PIP_BUTTON_ID);
     const anchor = pip && pip.parentNode === settingsButton.parentNode ? pip : settingsButton;
     if (button.nextElementSibling !== anchor) anchor.before(button);
+    refreshSpeedButton(button);
+  }
+
+  // Label, on state and tooltip, for both speed buttons.
+  function refreshSpeedButton(button) {
     const text = speedLabel(mySpeed());
     const on = !!settings.speedOn;
     if (button.firstChild.textContent !== text) button.firstChild.textContent = text;
@@ -2094,6 +2344,117 @@
     if (button.title !== tip) {
       button.title = tip;
       button.setAttribute("aria-label", tip);
+    }
+  }
+
+  // ---- Shorts player buttons ----
+  // The speed pill and picture-in-picture as round buttons in the Short's
+  // own top control bar, just before the captions button. Markup from a
+  // DevTools report (2026-11-13): ytd-reel-video-renderer ... >
+  // ytd-shorts-player-controls > #right-controls >
+  // #closed-captioning-button-container, #menu-button,
+  // #fullscreen-button-shape; 48x48 round buttons, no gap; the video is in
+  // #shorts-player. The bar has one shared dark background behind all its
+  // buttons, and the buttons themselves are clear, so ours are clear too
+  // (copying the full screen button's background drew a second, darker
+  // circle; reported). Left out when the video is too narrow for the bar to
+  // take them.
+  const SHORTS_SPEED_ID = "yt-split-shorts-speed";
+  const SHORTS_PIP_ID = "yt-split-shorts-pip";
+  const SHORTS_BUTTON_CLASS = "yt-split-shorts-btn";
+  const SHORTS_PIP_MIN_W = 340; // video width in px
+  const SHORTS_SPEED_MIN_W = 390;
+
+  function shortsRightControls(video) {
+    const reel = video.closest("ytd-reel-video-renderer");
+    const own = reel && reel.querySelector("ytd-shorts-player-controls #right-controls");
+    if (own) return own;
+    // Fallback: the bar inside the video's box, near its top.
+    const vr = video.getBoundingClientRect();
+    const host = shortsHost();
+    if (!host) return null;
+    for (const bar of host.querySelectorAll("ytd-shorts-player-controls #right-controls")) {
+      const r = bar.getBoundingClientRect();
+      if (r.width && r.left >= vr.left - 8 && r.right <= vr.right + 8 && r.top >= vr.top - 8 && r.top < vr.top + 120) {
+        return bar;
+      }
+    }
+    return null;
+  }
+
+  function buildShortsButton(id, onClick) {
+    const button = document.createElement("button");
+    button.id = id;
+    button.type = "button";
+    button.className = SHORTS_BUTTON_CLASS;
+    // No focus on a mouse click, so the spacebar still plays/pauses; no
+    // click through to the Short (a click on it pauses).
+    button.addEventListener("mousedown", (e) => e.preventDefault());
+    button.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onClick();
+    });
+    return button;
+  }
+
+  function buildShortsPipButton() {
+    const button = buildShortsButton(SHORTS_PIP_ID, togglePictureInPicture);
+    button.setAttribute("aria-label", "Picture-in-picture (Alt+Shift+P)");
+    button.title = "Picture-in-picture (Alt+Shift+P)";
+    button.appendChild(buildPipIcon());
+    return button;
+  }
+
+  function buildShortsSpeedButton() {
+    const button = buildShortsButton(SHORTS_SPEED_ID, toggleMySpeed);
+    const label = document.createElement("span");
+    label.className = "yt-split-speed-label";
+    button.appendChild(label);
+    return button;
+  }
+
+  function placeShortsButton(button, bar, before) {
+    if (button.parentNode === bar && button.nextElementSibling === before) return;
+    if (before && before.parentNode === bar) before.before(button);
+    else bar.prepend(button);
+  }
+
+  // From the 500ms watchdog (through updateSpeedButton): moves the two
+  // buttons to the Short on screen, or removes them off Shorts.
+  function updateShortsButtons() {
+    const found = speedAllowed() && isShortsPage() ? findShortsVideo() : null;
+    const bar = found ? shortsRightControls(found.video) : null;
+    let speed = document.getElementById(SHORTS_SPEED_ID);
+    let pip = document.getElementById(SHORTS_PIP_ID);
+    if (!bar) {
+      if (speed) speed.remove();
+      if (pip) pip.remove();
+      return;
+    }
+    // Apply My speed as soon as a new Short plays (not only on the timer).
+    if (!found.video.dataset.ytSplitSpeedBound) {
+      found.video.dataset.ytSplitSpeedBound = "1";
+      found.video.addEventListener("playing", maybeApplyMySpeed);
+    }
+    const width = found.rect.width;
+    const first =
+      bar.querySelector("#closed-captioning-button-container") ||
+      Array.from(bar.children).find((c) => !c.classList.contains(SHORTS_BUTTON_CLASS)) ||
+      null;
+    if (document.pictureInPictureEnabled && width >= SHORTS_PIP_MIN_W) {
+      if (!pip) pip = buildShortsPipButton();
+      placeShortsButton(pip, bar, first);
+    } else if (pip) {
+      pip.remove();
+      pip = null;
+    }
+    if (width >= SHORTS_SPEED_MIN_W) {
+      if (!speed) speed = buildShortsSpeedButton();
+      placeShortsButton(speed, bar, pip || first);
+      refreshSpeedButton(speed);
+    } else if (speed) {
+      speed.remove();
     }
   }
 
@@ -2195,8 +2556,10 @@
   // not the manifest version, so small fixes don't nag. New installs get
   // the first-run hint only: dismissing it marks this note seen too.
   const WHATS_NEW = {
-    version: "1.14.1",
+    version: "1.15.0",
     tips: [
+      "While the video plays and the controls are hidden, a thin red line at its bottom edge shows how far it has played.",
+      "Shorts now get your speed too: press S, or click the speed button at the top of a Short. The picture-in-picture button is there as well.",
       "The description key is now E (D clashed with keyboard extensions like Vimium). R opens Recommended, [ and ] move the divider, ? shows every key.",
       "Want to read while you pause? Turn on \"Open description on pause\" behind the toolbar icon.",
       "Watch faster? Pick \"My speed\" behind the toolbar icon, then press S on a video. New videos keep it until you press S again.",
@@ -3481,11 +3844,12 @@
     if (!PAGE_KEYS.has(e.key) || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
     const origin = e.composedPath ? e.composedPath()[0] : null;
     if (isTypingTarget(e.target) || isTypingTarget(origin)) return;
-    if (!settings.splitEnabled || !isWatchPage()) return;
+    if (!settings.splitEnabled) return;
     if (e.key === "s" || e.key === "S") {
-      if (!e.repeat) toggleMySpeed();
+      if (!e.repeat && (isWatchPage() || isShortsPage())) toggleMySpeed();
       return;
     }
+    if (!isWatchPage()) return;
     if (!document.documentElement.classList.contains("yt-split-active")) return;
     if (e.key === "[" || e.key === "]") {
       if (nudgeMainDivider(e.key === "[" ? -1 : 1)) e.preventDefault();
@@ -4110,6 +4474,7 @@
     watchdogWasWatching = watching;
     updateShortsGlow();
     updatePipButton();
+    updateMiniProgress();
     updateSpeedButton();
     maybeApplyMySpeed();
   }, 500);
