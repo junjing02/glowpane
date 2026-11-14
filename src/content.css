@@ -1753,11 +1753,12 @@ html.yt-split-active #yt-split-keys {
 }
 
 /* Thin progress line (content.js "Thin progress line"): shows only while
-   YouTube's controls are hidden during playback. Hidden, it sits exactly on
-   YouTube's own bar (the --yt-split-mini-* transform, measured by
-   content.js), so when the controls show, it rises from the bottom edge,
-   grows into the bar and fades into it; when they hide, it drops back down
-   to the edge. */
+   YouTube's controls are hidden during playback. It always stays at the
+   bottom edge. The two are never on screen together: when the controls
+   show, the line sinks into the edge and fades at once (before YouTube's bar
+   has faded in); when they hide, it waits until YouTube's bar has faded out,
+   then rises out of the edge. (A version that moved the line up into
+   YouTube's bar showed two lines during the change: reported.) */
 #yt-split-mini-progress {
   position: absolute;
   left: 0;
@@ -1769,13 +1770,11 @@ html.yt-split-active #yt-split-keys {
   background: rgba(255, 255, 255, 0.2);
   pointer-events: none;
   opacity: 0;
-  transform-origin: 0 100%;
-  transform: translate(var(--yt-split-mini-dx, 0px), calc(-1 * var(--yt-split-mini-dy, 0px)))
-    scale(var(--yt-split-mini-sx, 1), var(--yt-split-mini-sy, 1));
-  /* To the bar: move first, then fade into it. */
+  transform: scaleY(0);
+  transform-origin: 50% 100%;
   transition:
-    transform 0.32s cubic-bezier(0.2, 0, 0, 1),
-    opacity 0.14s ease 0.2s;
+    transform 0.12s cubic-bezier(0.4, 0, 1, 1),
+    opacity 0.1s linear;
 }
 
 #yt-split-mini-progress > span {
@@ -1789,17 +1788,16 @@ html.yt-split-active #yt-split-keys {
 #movie_player.ytp-autohide:not(.ad-showing):not(.ad-interrupting) #yt-split-mini-progress:not(.is-empty) {
   opacity: 1;
   transform: none;
-  /* To the edge: show at once, then drop down. */
   transition:
-    transform 0.36s cubic-bezier(0.2, 0, 0, 1),
-    opacity 0.1s ease;
+    transform 0.3s cubic-bezier(0.2, 0, 0, 1) 0.2s,
+    opacity 0.2s ease 0.2s;
 }
 
 @media (prefers-reduced-motion: reduce) {
   #yt-split-mini-progress,
   #movie_player.ytp-autohide #yt-split-mini-progress {
     transform: none !important;
-    transition: opacity 0.15s ease !important;
+    transition: opacity 0.1s linear !important;
   }
 }
 

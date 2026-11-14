@@ -2088,7 +2088,6 @@
   let miniVideo = null;
   let miniRaf = 0;
   let miniLive = false; // checked by the watchdog, not every frame
-  let miniMorphKey = "";
 
   function miniProgressWanted() {
     return settings.splitEnabled && windowRole !== "companion" && isWatchPage();
@@ -2115,30 +2114,6 @@
     const part = Math.min(1, Math.max(0, miniVideo.currentTime / duration));
     const value = "scaleX(" + part.toFixed(5) + ")";
     if (el.firstChild.style.transform !== value) el.firstChild.style.transform = value;
-  }
-
-  // Where YouTube's own bar is, as a transform from the line's place at the
-  // bottom edge: content.css moves the line there (and fades it out) when
-  // the controls show, and back down when they hide, so the one seems to
-  // turn into the other. Measured by the watchdog (the bar keeps its layout
-  // while hidden); written only when it changes.
-  function measureMiniMorph(el, player) {
-    const bar = player.querySelector(".ytp-progress-list") || player.querySelector(".ytp-progress-bar");
-    if (!bar) return;
-    const pr = player.getBoundingClientRect();
-    const br = bar.getBoundingClientRect();
-    if (pr.width <= 0 || br.width <= 0 || br.height <= 0) return;
-    const dx = Math.round(br.left - pr.left);
-    const dy = Math.round(pr.bottom - br.bottom);
-    const sx = (br.width / pr.width).toFixed(4);
-    const sy = (br.height / el.offsetHeight || 1).toFixed(2);
-    const key = [dx, dy, sx, sy].join();
-    if (key === miniMorphKey && el.style.getPropertyValue("--yt-split-mini-dx")) return;
-    miniMorphKey = key;
-    el.style.setProperty("--yt-split-mini-dx", dx + "px");
-    el.style.setProperty("--yt-split-mini-dy", dy + "px");
-    el.style.setProperty("--yt-split-mini-sx", sx);
-    el.style.setProperty("--yt-split-mini-sy", sy);
   }
 
   // Same color as YouTube's own played part (a gradient in newer players).
@@ -2189,7 +2164,6 @@
     }
     if (!el.dataset.ytSplitColored) matchMiniProgressColor(el, player);
     miniLive = !!player.querySelector(".ytp-live");
-    measureMiniMorph(el, player);
     setMiniVideo(video);
     drawMiniProgress();
   }
