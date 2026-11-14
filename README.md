@@ -34,7 +34,7 @@
 - **Adapts to the video** — vertical videos get an even split, and when the side pane is wide, recommendations and comments sit side by side.
 - **Ambient light** — the video's colors glow softly behind the page, on Shorts too, and in light theme, which YouTube itself doesn't offer.
 - **Two windows** — keep the video here and the comments in a second window, always in sync.
-- **Thoughtful defaults** — live chat, light and dark themes, and the end of a video are all handled for you.
+- **Thoughtful defaults** — live chat (Comments folds away while a stream is live), light and dark themes, and the end of a video are all handled for you.
 - **Just the video** — drag the main divider to the window edge and the side pane closes; click the thin strip at that edge to bring it back.
 - **Yours to tune** — a toolbar panel to set the glow strength, hide the description, recommendations or comments, choose the side pane's width and transparency, remember your layout or put the video on the right.
 - **Your speed, every video** — pick a playback speed once, press `S`, and every new video, Short and reload starts at it until you press `S` again. Live streams always play at normal speed.

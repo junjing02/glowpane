@@ -286,6 +286,28 @@
     document.documentElement.classList.toggle(DESC_FILL_CLASS, !isOpen(secondary) && !isOpen(commentsPane));
   }
 
+  // While a stream is live (not a replay), YouTube shows the live chat and
+  // no real comments, so Comments collapses once per live video and the
+  // chat gets the height. Opening Comments again is the user's choice. The
+  // remembered layout keeps the state from before (liveCommentsPrev), so
+  // normal videos don't start with Comments closed. From ensureLayout()
+  // and the 500ms watchdog (`.ytp-live` can show after the first pass).
+  let liveCommentsClosedFor = null;
+  let liveCommentsPrev = null;
+
+  function collapseCommentsForLive() {
+    if (windowRole !== "none" || !document.documentElement.classList.contains("yt-split-active")) return;
+    if (!isLiveVideo()) return;
+    const id = currentWatchId();
+    const pane = document.getElementById("yt-split-comments-pane");
+    if (!id || id === liveCommentsClosedFor || !pane) return;
+    liveCommentsClosedFor = id;
+    if (descRestore) descRestore = descRestore.filter((p) => p !== pane);
+    if (pane.classList.contains("yt-split-pane-collapsed")) return;
+    liveCommentsPrev = commentsCollapsed;
+    setPaneCollapsed(pane, true);
+  }
+
   // The description and the list panes are never open together (not in
   // the pop-up, which has the room): opening the description closes
   // Recommended and Comments (syncDescPane), and an open list pane (title
@@ -2525,7 +2547,7 @@
       topHeight: currentTopHeightPx(),
       wideWidth: parseFloat(document.documentElement.style.getPropertyValue(WIDE_WIDTH_VAR)) || null,
       secondaryCollapsed,
-      commentsCollapsed,
+      commentsCollapsed: liveCommentsPrev !== null ? liveCommentsPrev : commentsCollapsed,
       descExpanded,
     };
     try {
@@ -3203,7 +3225,7 @@
     }
     ensurePaneHeader(commentsPane, "Comments", {
       collapsed: commentsCollapsed,
-      onToggle: (c) => { commentsCollapsed = c; saveLayout(); }
+      onToggle: (c) => { commentsCollapsed = c; liveCommentsPrev = null; saveLayout(); }
     });
 
     // Comments are absent while a stream is live (they show up once it
@@ -3235,6 +3257,7 @@
     spanFullWidth(columns);
     repairSubscribeButtons();
     applyHiddenPanes();
+    collapseCommentsForLive();
     syncOnePane();
     updateDescFill();
     observeSidePane(sidePane);
@@ -4248,6 +4271,8 @@
     // secondaryCollapsed/commentsCollapsed's own comment above.
     secondaryCollapsed = false;
     commentsCollapsed = false;
+    liveCommentsClosedFor = null;
+    liveCommentsPrev = null;
 
     // "Remember my layout" (toolbar panel): start from where the user last
     // left things instead of the defaults above. Normal split only.
@@ -4505,6 +4530,7 @@
     updateMiniProgress();
     updateSpeedButton();
     maybeApplyMySpeed();
+    collapseCommentsForLive();
   }, 500);
 
   // Back/forward-button navigation doesn't always fire YouTube's own
