@@ -11,3 +11,25 @@ document.addEventListener("ytsplit:set-playback-rate", (e) => {
   if (!Number.isFinite(rate) || rate <= 0 || !player || typeof player.setPlaybackRate !== "function") return;
   player.setPlaybackRate(rate);
 });
+
+// A live stream more than the given number of seconds behind the live
+// point moves to it (content.js "Live streams continue at the live point
+// after a reload"). Player methods from memory; the <video> element's
+// seekable range as a fallback.
+document.addEventListener("ytsplit:catch-up-live", (e) => {
+  const behind = Number(e.detail) || 20;
+  const player = document.getElementById("movie_player");
+  if (!player) return;
+  const video = player.querySelector("video");
+  const state = typeof player.getProgressState === "function" ? player.getProgressState() : null;
+  let end = state && Number.isFinite(state.seekableEnd) ? state.seekableEnd : null;
+  let current = state && Number.isFinite(state.current) ? state.current : null;
+  if ((end === null || current === null) && video && video.seekable.length) {
+    end = video.seekable.end(video.seekable.length - 1);
+    current = video.currentTime;
+  }
+  if (end === null || current === null || end - current <= behind) return;
+  if (typeof player.seekToLiveHead === "function") player.seekToLiveHead();
+  else if (typeof player.seekTo === "function") player.seekTo(end, true);
+  else if (video) video.currentTime = end;
+});

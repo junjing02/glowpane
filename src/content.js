@@ -2396,6 +2396,43 @@
     }
   }
 
+  // ---- Live streams continue at the live point after a reload ----
+  // Reported: a live stream opened from another page plays at the live
+  // point, but after a reload of its page it starts from the beginning of
+  // the stream. The cause was not found (nothing in this file seeks on
+  // load), so this is a safety net: for the video this page was loaded
+  // with (in-page navigation works), without a "t" in the URL, page.js
+  // moves a live stream that is more than LIVE_BEHIND_S behind the live
+  // point to it. Only in the first LIVE_CATCHUP_MS of playback, so a seek
+  // back by the user after that stays.
+  const LIVE_BEHIND_S = 20;
+  const LIVE_CATCHUP_MS = 8000;
+  const loadedLiveCheckId = (() => {
+    if (location.pathname !== "/watch") return null;
+    const params = new URLSearchParams(location.search);
+    return params.has("t") ? null : params.get("v");
+  })();
+  let liveCatchupUntil = 0;
+  let liveCatchupDone = !loadedLiveCheckId;
+
+  // From the 500ms watchdog.
+  function maybeCatchUpLive() {
+    if (liveCatchupDone || !settings.splitEnabled) return;
+    if (currentWatchId() !== loadedLiveCheckId) {
+      liveCatchupDone = true;
+      return;
+    }
+    const video = speedVideo();
+    if (!video || video.paused || isAdPlaying() || !isLiveVideo()) return;
+    const now = Date.now();
+    if (!liveCatchupUntil) liveCatchupUntil = now + LIVE_CATCHUP_MS;
+    if (now > liveCatchupUntil) {
+      liveCatchupDone = true;
+      return;
+    }
+    document.dispatchEvent(new CustomEvent("ytsplit:catch-up-live", { detail: String(LIVE_BEHIND_S) }));
+  }
+
   // ---- Shorts player buttons ----
   // The speed pill and picture-in-picture as round buttons in the Short's
   // own top control bar, just before the captions button. Markup from a
@@ -4531,6 +4568,7 @@
     updateSpeedButton();
     maybeApplyMySpeed();
     collapseCommentsForLive();
+    maybeCatchUpLive();
   }, 500);
 
   // Back/forward-button navigation doesn't always fire YouTube's own
