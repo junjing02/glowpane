@@ -4536,6 +4536,21 @@
   });
   document.addEventListener("yt-navigate-finish", onNavigateFinish);
 
+  // Tabs opened in the background (several videos opened from one page)
+  // stayed plain YouTube (reported). In a hidden tab YouTube can finish the
+  // watch page only once the tab is shown, and the window size read there
+  // can be wrong, so start()'s retries (~20s) and its one size re-check all
+  // ended before the tab was ever looked at; the watchdog below only starts
+  // again when the page CHANGES to a watch page. Showing the tab now runs
+  // start() again when the layout is off (start() itself still leaves
+  // theater mode, small windows and a fail-safe page alone).
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    if (!isWatchPage() || isMiniplayerActive()) return;
+    if (document.documentElement.classList.contains("yt-split-active")) return;
+    start();
+  });
+
   // Watchdog. Not every way of leaving or returning to a video fires the
   // events above (the miniplayer, "i", is one), and start() disconnects the
   // observer, so nothing else would notice. Twice a second: if the layout
