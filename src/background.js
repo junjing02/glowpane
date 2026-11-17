@@ -265,19 +265,65 @@ chrome.runtime.setUninstallURL("https://junjing02.github.io/glowpane/bye.html");
 // early.js is left out; it only matters in a second window, and there is
 // none yet.
 chrome.runtime.onInstalled.addListener(async ({ reason }) => {
+  updateAccessBadge();
   if (reason !== "install") return;
-  const tabs = await chrome.tabs.query({ url: "https://www.youtube.com/*" });
+  injectIntoOpenTabs();
+});
+
+// Skips a tab where content.js already runs (it sets
+// glowpaneTogglePip in this extension's isolated world).
+async function injectIntoOpenTabs() {
+  let tabs = [];
+  try {
+    tabs = await chrome.tabs.query({ url: "https://www.youtube.com/*" });
+  } catch (e) {
+    return;
+  }
   for (const tab of tabs) {
     if (tab.discarded) continue;
     const target = { tabId: tab.id };
     try {
+      const [probe] = await chrome.scripting.executeScript({
+        target,
+        func: () => typeof globalThis.glowpaneTogglePip === "function",
+      });
+      if (probe && probe.result) continue;
       await chrome.scripting.insertCSS({ target, files: ["src/content.css"] });
       await chrome.scripting.executeScript({ target, files: ["src/content.js"] });
       await chrome.scripting.executeScript({ target, files: ["src/page.js"], world: "MAIN" });
     } catch (e) {
-      // Tab closed or still loading: it gets the scripts on its next load.
+      // Tab closed, still loading, or no access: it gets the scripts on its
+      // next load.
     }
   }
+}
+
+// Site access. Chrome lets the user (or Chrome's own "on click" setting)
+// hold back an extension's access to a site. Chrome then runs the content
+// scripts only in a tab where the toolbar icon was clicked, after Chrome's
+// own "Reload this page" prompt; a normal reload and every other tab stay
+// plain YouTube (reported). While access is missing the icon shows a "!"
+// badge and the panel a button that asks for it. Once allowed, the open
+// YouTube tabs get the scripts without a reload.
+const YOUTUBE_ACCESS = { origins: ["https://www.youtube.com/*"] };
+
+async function updateAccessBadge() {
+  let allowed = true;
+  try {
+    allowed = await chrome.permissions.contains(YOUTUBE_ACCESS);
+  } catch (e) {
+    // can't tell; leave the icon as it is
+  }
+  chrome.action.setBadgeText({ text: allowed ? "" : "!" });
+  if (!allowed) chrome.action.setBadgeBackgroundColor({ color: "#d93025" });
+  chrome.action.setTitle({ title: allowed ? "Glowpane" : "Glowpane: allow it on YouTube" });
+}
+
+chrome.runtime.onStartup.addListener(updateAccessBadge);
+chrome.permissions.onRemoved.addListener(updateAccessBadge);
+chrome.permissions.onAdded.addListener(async () => {
+  await updateAccessBadge();
+  if (await chrome.permissions.contains(YOUTUBE_ACCESS).catch(() => false)) injectIntoOpenTabs();
 });
 
 // Keyboard shortcuts (manifest "commands"; users can rebind them at
