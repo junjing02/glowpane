@@ -34,10 +34,10 @@
 - **Adapts to the video** — vertical videos get an even split, and when the side pane is wide, recommendations and comments sit side by side.
 - **Ambient light** — the video's colors glow softly behind the page, on Shorts too, and in light theme, which YouTube itself doesn't offer.
 - **Two windows** — keep the video here and the comments in a second window, always in sync.
-- **Thoughtful defaults** — live chat, light and dark themes, and the end of a video are all handled for you.
+- **Thoughtful defaults** — live chat (Comments folds away while a stream is live), light and dark themes, and the end of a video are all handled for you.
 - **Just the video** — drag the main divider to the window edge and the side pane closes; click the thin strip at that edge to bring it back.
 - **Yours to tune** — a toolbar panel to set the glow strength, hide the description, recommendations or comments, choose the side pane's width and transparency, remember your layout or put the video on the right.
-- **Your speed, every video** — pick a playback speed once, press `S`, and every new video, Short and reload starts at it until you press `S` again.
+- **Your speed, every video** — pick a playback speed once, press `S`, and every new video, Short and reload starts at it until you press `S` again. Live streams always play at normal speed.
 - **Keyboard friendly** — shortcuts for the split and Two windows, one-key shortcuts on the video page, and dividers and pane titles you can reach with Tab.
 - **Out of the way** — theater mode and small windows get YouTube's normal layout.
 
@@ -66,6 +66,7 @@ Click the extension's toolbar icon for the settings: the split itself, Two windo
 - Picture-in-picture: click the button next to the player's settings icon (or press `Alt+Shift+P`), and the video floats in a small window on top of your other apps. It works on Shorts too: the button is at the top of the Short, next to the captions button.
 - Double-click a divider to reset it. While you drag, a divider snaps to its default size, so you can find it again. With a divider focused, the arrow keys move it.
 - For a quick video-only view, drag the main divider to the window edge. Past the pane's smallest size it starts to slide away, and a hint shows when to let go. Click the strip at that edge to reopen the side pane. When the video ends, the side pane opens by itself so you can pick the next one, and it closes again when the next video plays. Your Show settings stay as they are.
+- If only one YouTube tab gets the split, or a normal reload doesn't bring it back, Chrome is holding back Glowpane's access to YouTube (the toolbar icon shows a red `!`). Click the icon and choose **Allow on YouTube**.
 - Ambient light works in light and dark themes. Its switch is in the toolbar panel, and YouTube's own Ambient mode switch turns it on and off too.
 
 ## Privacy

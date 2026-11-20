@@ -286,6 +286,28 @@
     document.documentElement.classList.toggle(DESC_FILL_CLASS, !isOpen(secondary) && !isOpen(commentsPane));
   }
 
+  // While a stream is live (not a replay), YouTube shows the live chat and
+  // no real comments, so Comments collapses once per live video and the
+  // chat gets the height. Opening Comments again is the user's choice. The
+  // remembered layout keeps the state from before (liveCommentsPrev), so
+  // normal videos don't start with Comments closed. From ensureLayout()
+  // and the 500ms watchdog (`.ytp-live` can show after the first pass).
+  let liveCommentsClosedFor = null;
+  let liveCommentsPrev = null;
+
+  function collapseCommentsForLive() {
+    if (windowRole !== "none" || !document.documentElement.classList.contains("yt-split-active")) return;
+    if (!isLiveVideo()) return;
+    const id = currentWatchId();
+    const pane = document.getElementById("yt-split-comments-pane");
+    if (!id || id === liveCommentsClosedFor || !pane) return;
+    liveCommentsClosedFor = id;
+    if (descRestore) descRestore = descRestore.filter((p) => p !== pane);
+    if (pane.classList.contains("yt-split-pane-collapsed")) return;
+    liveCommentsPrev = commentsCollapsed;
+    setPaneCollapsed(pane, true);
+  }
+
   // The description and the list panes are never open together (not in
   // the pop-up, which has the room): opening the description closes
   // Recommended and Comments (syncDescPane), and an open list pane (title
@@ -2174,12 +2196,15 @@
   // video (and a refresh) starts at that speed, because YouTube goes back to
   // 1x after a reload. Off sets normal speed. Applied once per video, so a
   // speed picked in YouTube's own menu stays for the rest of that video. Not
-  // during an ad, and not on live streams (`.ytp-live`, from memory).
+  // during an ad. Live streams always play at normal speed: while on, My
+  // speed sets 1x there, and the buttons and the S key are switched off
+  // (`.ytp-live`, from memory).
   // Works on any watch page, also in theater mode and small windows, and on
   // Shorts (each Short is a new video; buttons in "Shorts player buttons").
   const SPEED_BUTTON_ID = "yt-split-speed-button";
   const SPEED_TOAST_ID = "yt-split-speed-toast";
   let speedAppliedFor = null;
+  let liveResetFor = null;
   let speedToastTimer = null;
 
   function mySpeed() {
@@ -2222,6 +2247,11 @@
     return watchRoot().querySelector("#movie_player");
   }
 
+  // Watch page only; Shorts are not live.
+  function isLiveVideo() {
+    return isWatchPage() && !!watchRoot().querySelector("#movie_player .ytp-live");
+  }
+
   function isAdPlaying() {
     const player = speedPlayer();
     return !!player && (player.classList.contains("ad-showing") || player.classList.contains("ad-interrupting"));
@@ -2238,15 +2268,25 @@
   function maybeApplyMySpeed() {
     if (!settings.speedOn || !speedAllowed()) return;
     const id = currentWatchId();
-    if (!id || id === speedAppliedFor) return;
+    if (!id) return;
     const video = speedVideo();
     if (!video || video.paused || isAdPlaying()) return;
+    if (isLiveVideo()) {
+      // Normal speed, once per live stream: also when My speed was already
+      // set before the player showed that it is live.
+      if (liveResetFor !== id) {
+        liveResetFor = id;
+        speedAppliedFor = id;
+        if (video.playbackRate !== 1) setVideoSpeed(video, 1);
+      }
+      return;
+    }
+    if (id === speedAppliedFor) return;
     speedAppliedFor = id;
-    if (isWatchPage() && watchRoot().querySelector("#movie_player .ytp-live")) return;
     setVideoSpeed(video, mySpeed());
     // YouTube's own player setup can reset the speed just after the start.
     setTimeout(() => {
-      if (settings.speedOn && speedAppliedFor === id && currentWatchId() === id && !isAdPlaying()) {
+      if (settings.speedOn && speedAppliedFor === id && currentWatchId() === id && !isAdPlaying() && !isLiveVideo()) {
         setVideoSpeed(video, mySpeed());
       }
     }, 800);
@@ -2254,6 +2294,10 @@
 
   function toggleMySpeed() {
     if (!speedAllowed()) return;
+    if (isLiveVideo()) {
+      showSpeedToast("Live: normal speed");
+      return;
+    }
     const on = !settings.speedOn;
     settings.speedOn = on;
     try {
@@ -2336,15 +2380,57 @@
   // Label, on state and tooltip, for both speed buttons.
   function refreshSpeedButton(button) {
     const text = speedLabel(mySpeed());
-    const on = !!settings.speedOn;
+    const live = isLiveVideo();
+    const on = !!settings.speedOn && !live;
     if (button.firstChild.textContent !== text) button.firstChild.textContent = text;
     button.classList.toggle("is-on", on);
+    button.classList.toggle("is-disabled", live);
     button.setAttribute("aria-pressed", String(on));
-    const tip = on ? "Back to normal speed (S)" : "Play at " + text + " (S)";
+    if (live) button.setAttribute("aria-disabled", "true");
+    else button.removeAttribute("aria-disabled");
+    const tip = live ? "Live streams play at normal speed"
+      : on ? "Back to normal speed (S)" : "Play at " + text + " (S)";
     if (button.title !== tip) {
       button.title = tip;
       button.setAttribute("aria-label", tip);
     }
+  }
+
+  // ---- Live streams continue at the live point after a reload ----
+  // Reported: a live stream opened from another page plays at the live
+  // point, but after a reload of its page it starts from the beginning of
+  // the stream. The cause was not found (nothing in this file seeks on
+  // load), so this is a safety net: for the video this page was loaded
+  // with (in-page navigation works), without a "t" in the URL, page.js
+  // moves a live stream that is more than LIVE_BEHIND_S behind the live
+  // point to it. Only in the first LIVE_CATCHUP_MS of playback, so a seek
+  // back by the user after that stays.
+  const LIVE_BEHIND_S = 20;
+  const LIVE_CATCHUP_MS = 8000;
+  const loadedLiveCheckId = (() => {
+    if (location.pathname !== "/watch") return null;
+    const params = new URLSearchParams(location.search);
+    return params.has("t") ? null : params.get("v");
+  })();
+  let liveCatchupUntil = 0;
+  let liveCatchupDone = !loadedLiveCheckId;
+
+  // From the 500ms watchdog.
+  function maybeCatchUpLive() {
+    if (liveCatchupDone || !settings.splitEnabled) return;
+    if (currentWatchId() !== loadedLiveCheckId) {
+      liveCatchupDone = true;
+      return;
+    }
+    const video = speedVideo();
+    if (!video || video.paused || isAdPlaying() || !isLiveVideo()) return;
+    const now = Date.now();
+    if (!liveCatchupUntil) liveCatchupUntil = now + LIVE_CATCHUP_MS;
+    if (now > liveCatchupUntil) {
+      liveCatchupDone = true;
+      return;
+    }
+    document.dispatchEvent(new CustomEvent("ytsplit:catch-up-live", { detail: String(LIVE_BEHIND_S) }));
   }
 
   // ---- Shorts player buttons ----
@@ -2498,7 +2584,7 @@
       topHeight: currentTopHeightPx(),
       wideWidth: parseFloat(document.documentElement.style.getPropertyValue(WIDE_WIDTH_VAR)) || null,
       secondaryCollapsed,
-      commentsCollapsed,
+      commentsCollapsed: liveCommentsPrev !== null ? liveCommentsPrev : commentsCollapsed,
       descExpanded,
     };
     try {
@@ -3176,7 +3262,7 @@
     }
     ensurePaneHeader(commentsPane, "Comments", {
       collapsed: commentsCollapsed,
-      onToggle: (c) => { commentsCollapsed = c; saveLayout(); }
+      onToggle: (c) => { commentsCollapsed = c; liveCommentsPrev = null; saveLayout(); }
     });
 
     // Comments are absent while a stream is live (they show up once it
@@ -3208,6 +3294,7 @@
     spanFullWidth(columns);
     repairSubscribeButtons();
     applyHiddenPanes();
+    collapseCommentsForLive();
     syncOnePane();
     updateDescFill();
     observeSidePane(sidePane);
@@ -4028,6 +4115,7 @@
     // This speed came from the other window: "My speed" leaves it alone.
     speedAppliedFor = currentWatchId();
     const apply = () => {
+      if (isLiveVideo()) return;
       document.dispatchEvent(new CustomEvent("ytsplit:set-playback-rate", { detail: String(rate) }));
       // Fallback if the page-world helper isn't there: set the element.
       if (video.playbackRate !== rate) video.playbackRate = rate;
@@ -4220,6 +4308,8 @@
     // secondaryCollapsed/commentsCollapsed's own comment above.
     secondaryCollapsed = false;
     commentsCollapsed = false;
+    liveCommentsClosedFor = null;
+    liveCommentsPrev = null;
 
     // "Remember my layout" (toolbar panel): start from where the user last
     // left things instead of the defaults above. Normal split only.
@@ -4446,6 +4536,21 @@
   });
   document.addEventListener("yt-navigate-finish", onNavigateFinish);
 
+  // Tabs opened in the background (several videos opened from one page)
+  // stayed plain YouTube (reported). In a hidden tab YouTube can finish the
+  // watch page only once the tab is shown, and the window size read there
+  // can be wrong, so start()'s retries (~20s) and its one size re-check all
+  // ended before the tab was ever looked at; the watchdog below only starts
+  // again when the page CHANGES to a watch page. Showing the tab now runs
+  // start() again when the layout is off (start() itself still leaves
+  // theater mode, small windows and a fail-safe page alone).
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    if (!isWatchPage() || isMiniplayerActive()) return;
+    if (document.documentElement.classList.contains("yt-split-active")) return;
+    start();
+  });
+
   // Watchdog. Not every way of leaving or returning to a video fires the
   // events above (the miniplayer, "i", is one), and start() disconnects the
   // observer, so nothing else would notice. Twice a second: if the layout
@@ -4477,6 +4582,8 @@
     updateMiniProgress();
     updateSpeedButton();
     maybeApplyMySpeed();
+    collapseCommentsForLive();
+    maybeCatchUpLive();
   }, 500);
 
   // Back/forward-button navigation doesn't always fire YouTube's own

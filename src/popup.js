@@ -117,3 +117,17 @@ version.addEventListener("click", async () => {
     say("Open a YouTube video first");
   }
 });
+
+// Site access held back by Chrome (background.js "Site access"): explain it
+// and ask for it. Chrome's own prompt may close this panel; the background
+// then updates the open YouTube tabs.
+const YOUTUBE_ACCESS = { origins: ["https://www.youtube.com/*"] };
+const accessNote = document.getElementById("access");
+chrome.permissions.contains(YOUTUBE_ACCESS).then((allowed) => {
+  accessNote.hidden = allowed;
+}).catch(() => {});
+document.getElementById("allowAccess").addEventListener("click", () => {
+  chrome.permissions.request(YOUTUBE_ACCESS).then((allowed) => {
+    if (allowed) accessNote.hidden = true;
+  }).catch(() => {});
+});
