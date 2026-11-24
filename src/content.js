@@ -4463,7 +4463,8 @@
     "click",
     (e) => {
       if (!e.target.closest(".ytp-size-button")) return;
-      if (e.isTrusted) noteTheaterChoice(); // not our own click
+      if (ownTheaterClick) return; // whenTheater() follows our own click
+      if (e.isTrusted) noteTheaterChoice(); // not a script's click
       reactToTheaterToggle();
     },
     true
@@ -4484,8 +4485,10 @@
   // ---- Theater mode in small windows ----
   // settings.autoTheater (off by default). The split needs a large window,
   // so below that this turns YouTube's theater mode on, and off again when
-  // the window is large enough for the split. Twice a second from the
-  // watchdog, which also keeps a window drag from flipping it on every step.
+  // the window is large enough for the split. Checked when a window resize
+  // ends (the resize debounce), on navigation, when the tab is shown and
+  // after full screen; the watchdog repeats a check only while one is still
+  // open (autoTheaterPending: player not built yet, waiting on a click).
   //
   // YouTube remembers theater mode for the whole browser, so a small window
   // can make a large window's next video open in theater mode. autoTheaterOn
@@ -4493,7 +4496,6 @@
   // Glowpane turned it on, so only that gets turned off: theater mode the
   // user chose stays. A manual toggle (button or T) is kept in
   // THEATER_CHOICE_KEY until the window changes between small and large.
-  const AUTO_THEATER_SETTLE_MS = 400;
   // YouTube flips the attribute a moment after the click: a second click
   // too early would toggle it straight back.
   const AUTO_THEATER_WAIT_MS = 1500;
@@ -4503,10 +4505,28 @@
   let autoTheaterShared = false;
   let autoTheaterSmall = null;
   let autoTheaterVideo = null;
-  let autoTheaterSince = 0;
   let autoTheaterHold = 0;
   let autoTheaterTries = 0;
   let autoTheaterNextTry = 0;
+  let autoTheaterPending = true; // the first check waits for the page
+  let ownTheaterClick = false;
+
+  function queueAutoTheater() {
+    autoTheaterPending = true;
+  }
+
+  // Runs fn once YouTube has turned theater mode to `want`, which it does a
+  // moment after the click: checked every 50 ms, so the split doesn't wait
+  // for the next watchdog pass.
+  function whenTheater(want, fn) {
+    const until = Date.now() + AUTO_THEATER_WAIT_MS;
+    const check = () => {
+      if (!isWatchPage()) return;
+      if (isTheaterMode() === want) fn();
+      else if (Date.now() < until) setTimeout(check, 50);
+    };
+    setTimeout(check, 50);
+  }
 
   function readTabValue(key) {
     try {
@@ -4539,7 +4559,12 @@
   function clickTheaterButton() {
     const button = watchRoot().querySelector("#movie_player .ytp-size-button");
     if (!button) return false;
-    button.click();
+    ownTheaterClick = true;
+    try {
+      button.click();
+    } finally {
+      ownTheaterClick = false;
+    }
     return true;
   }
 
@@ -4550,25 +4575,26 @@
   }
 
   function syncAutoTheater() {
-    if (!storageLoaded || !settings.autoTheater || !settings.splitEnabled) return;
-    if (!isWatchPage() || windowRole !== "none" || document.hidden || isMiniplayerActive()) return;
+    autoTheaterPending = false;
+    if (!storageLoaded) return queueAutoTheater();
+    if (!settings.autoTheater || !settings.splitEnabled) return;
+    if (!isWatchPage() || windowRole !== "none" || document.hidden) return;
+    if (isMiniplayerActive()) return queueAutoTheater();
     const root = watchRoot();
-    if (root === document) return;
+    if (root === document) return queueAutoTheater();
     const now = Date.now();
     // Full screen makes the page large for a moment, on the way out too.
     if (document.fullscreenElement || root.hasAttribute("fullscreen")) {
       autoTheaterHold = now + 1000;
-      return;
+      return queueAutoTheater();
     }
-    if (now < autoTheaterHold) return;
+    if (now < autoTheaterHold) return queueAutoTheater();
 
     const small = !meetsActivationThreshold();
     const id = currentWatchId();
-    if (small !== autoTheaterSmall) autoTheaterSince = now;
     if (small !== autoTheaterSmall || id !== autoTheaterVideo) autoTheaterTries = 0;
     autoTheaterSmall = small;
     autoTheaterVideo = id;
-    if (now - autoTheaterSince < AUTO_THEATER_SETTLE_MS) return;
 
     const group = small ? "small" : "large";
     const choice = readTabValue(THEATER_CHOICE_KEY);
@@ -4591,12 +4617,26 @@
       autoTheaterTries = 0;
       return;
     }
-    if (autoTheaterTries >= AUTO_THEATER_MAX_TRIES || now < autoTheaterNextTry) return;
-    if (!clickTheaterButton()) return; // the player's controls aren't built yet
+    if (autoTheaterTries >= AUTO_THEATER_MAX_TRIES) return;
+    // Still waiting on the last click, or the player's controls aren't
+    // built yet: the watchdog checks again.
+    if (now < autoTheaterNextTry || !clickTheaterButton()) return queueAutoTheater();
     autoTheaterTries++;
     autoTheaterNextTry = now + AUTO_THEATER_WAIT_MS;
     if (small) markAutoTheater(true);
+    queueAutoTheater(); // in case YouTube never flips it
+    whenTheater(small, () => {
+      autoTheaterNextTry = 0;
+      syncAutoTheater();
+    });
   }
+
+  document.addEventListener("yt-navigate-finish", queueAutoTheater);
+  document.addEventListener("visibilitychange", queueAutoTheater);
+  document.addEventListener("fullscreenchange", () => {
+    autoTheaterHold = Date.now() + 1000;
+    queueAutoTheater();
+  });
 
   // The setting (or the master switch) changed. Switched off: give back
   // theater mode if Glowpane turned it on in this tab.
@@ -4604,11 +4644,11 @@
     autoTheaterSmall = null;
     autoTheaterTries = 0;
     writeTabValue(THEATER_CHOICE_KEY, null);
-    if (settings.autoTheater && settings.splitEnabled) return;
+    if (settings.autoTheater && settings.splitEnabled) return syncAutoTheater();
     if (readTabValue(THEATER_TAB_KEY) === "1" && isWatchPage() && isTheaterMode() && clickTheaterButton()) {
-      setTimeout(() => {
-        if (isWatchPage() && !isTheaterMode()) start();
-      }, 400);
+      whenTheater(false, () => {
+        if (!document.documentElement.classList.contains("yt-split-active")) start();
+      });
     }
     markAutoTheater(false);
   }
@@ -4721,7 +4761,7 @@
     maybeApplyMySpeed();
     collapseCommentsForLive();
     maybeCatchUpLive();
-    syncAutoTheater();
+    if (autoTheaterPending) syncAutoTheater();
   }, 500);
 
   // Back/forward-button navigation doesn't always fire YouTube's own
@@ -4998,6 +5038,7 @@
     resizeDebounce = setTimeout(() => {
       if (!isWatchPage()) return;
       scheduleSubscribeRepair();
+      syncAutoTheater();
 
       const isActive = document.documentElement.classList.contains("yt-split-active");
       if (!meetsActivationThreshold()) {
