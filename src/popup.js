@@ -15,6 +15,7 @@ const DEFAULTS = {
   rememberLayout: false,
   videoOnRight: false,
   descOnPause: false,
+  autoTheater: false,
   speedRate: "1.5",
 };
 
