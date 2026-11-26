@@ -1556,8 +1556,8 @@ img {
   font-size: 17px;
 }
 
-/* Video: the 37-second tour. A poster with a play button until clicked,
-   then YouTube's player in the same 16:9 frame (script.js). */
+/* Video: the 39-second tour. A poster with a play button until clicked,
+   then a plain <video> of demo.mp4 in the same 16:9 frame (script.js). */
 .video-frame {
   position: relative;
   aspect-ratio: 16 / 9;
@@ -1617,6 +1617,14 @@ img {
   height: 30px;
   margin-left: 4px;
   fill: #111316;
+}
+
+/* The licence of the films in the video asks for this credit. */
+.video-credit {
+  margin: 14px 0 0;
+  color: var(--text-dim);
+  font-size: 13px;
+  text-align: center;
 }
 
 .video-frame video {
