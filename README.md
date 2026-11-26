@@ -20,9 +20,10 @@
 </p>
 
 <p align="center">
-  <a href="https://junjing02.github.io/glowpane/demo.mp4"><img src="docs/demo.webp" alt="Demo: Glowpane keeps the YouTube video in view with everything else beside it; S plays every video at your speed, E opens the description, dragging the divider to the edge leaves just the video, and ? shows every key." width="100%" /></a>
+  <a href="https://junjing02.github.io/glowpane/demo.mp4"><img src="docs/demo.webp" alt="Demo: Glowpane keeps the YouTube video in view with everything else beside it, the page glows with the video's colors, S plays every video at your speed, E opens the description, and dragging the divider to the edge leaves just the video." width="100%" /></a>
   <br />
-  <sub><a href="https://junjing02.github.io/glowpane/demo.mp4">▶ Watch the demo in full quality</a></sub>
+  <sub><a href="https://junjing02.github.io/glowpane/demo.mp4">▶ Watch the demo in full quality</a></sub><br />
+  <sub>Film: Big Buck Bunny (c) 2008 Blender Foundation, CC BY 3.0; thumbnails from Sintel (CC BY 3.0) and Elephants Dream (CC BY 2.5).</sub>
 </p>
 
 ---
